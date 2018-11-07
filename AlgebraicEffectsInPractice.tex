@@ -1,0 +1,180 @@
+\documentclass{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage{polski}
+\usepackage[polish]{babel}
+\usetheme{Darmstadt}
+
+\newcommand{\eff}[2]{#1 ! \{ #2 \}}
+
+\title{Algebraic Effects in practice (and in theory too)}
+ 
+\author{Zeimer}
+\date{8 November 2018}
+
+\begin{document}
+
+\frame{\titlepage}
+
+\frame{\tableofcontents}
+
+\section{What's it all about?}
+
+\begin{frame}{Referential transparency}
+\begin{itemize}
+	\item \href{https://stackoverflow.com/questions/210835/what-is-referential-transparency}{https://stackoverflow.com/questions/210835/what-is-referential-transparency}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Values and computations}
+\begin{itemize}
+	\item Nie wszystkie efekty to monady. Które efekty są algebraiczne, a które nie?
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Value or computation?}
+\begin{itemize}
+	\item Consider the type $E \to A$.
+	\item We can consider elements of this type to be values. They are pure functions, after all.
+	\item We can, however, also see them as effectful computations of type $A$ that depend on some external environment $E$.
+	\item Which point of view is better is ad hoc. Not many people consider pure functions $E \to A$ effectful, and not many people consider $IO\ a$ pure in Haskell.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Examples of effects}
+\begin{itemize}
+	\item Nondeterminism and randomness
+	\item Mutable state, reading configuration and logging
+	\item Exceptions, partiality and errors
+	\item Continuations - callCC, shift, reset and whatnot
+	\item Input and output
+	\item Nontermination
+	\item Allocating memory
+	\item Threads
+	\item Asynchronicity
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The same effect or different?}
+\begin{itemize}
+	\item Consider the effect of performing some input/output operations.
+	\item Many things qualify - reading and writing to standard input/output, manipulating files, connecting to a local network or the Internet, manipulating SQL/NoSQL database, running a HTTP server, reading data from microphone, camera, joystick, network card...
+	\item Should these be considered different effects or parts of the IO effect?
+	\item If your language is too weak, then they are the same.
+	\item If your language is strong enough, you may consider them the same or different depending on what you need (e.g. security or ease of implementation).
+\end{itemize}
+\end{frame}
+
+\begin{frame}{An effect or not?}
+\begin{itemize}
+	\item Consider an operation \texttt{sleep(time)}. Can calling it be regarded as an effectful behaviour?
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}{Where do effects come from?}
+\begin{itemize}
+	\item What effects are available in a language depends on the design (semantics) of that language.
+	\item In theory, any Turing-complete language can express any effect (by implementing a compiler or interpreter of a language which supports these effects).
+	\item In practice, some languages can express more effects than others or they can do it more naturally/easily.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Where do effects come from: Java}
+\begin{itemize}
+	\item Nontermination: unrestricted while loop.
+	\item Input and output: library functions for performing IO.
+	\item Partiality: objects of any class can be null.
+	\item Exceptions: built-in exceptions mechanism.
+	\item Mutable state: assignment.
+	\item Randomness: implementable (impure pseudorandom generators).
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Where do effects come from: Haskell}
+\begin{itemize}
+	\item Nontermination: unrestricted recursive calls.
+	\item Input and output: built-in IO type and functions for using it.
+	\item Partiality: can be implemented using algebraic data types (the type Maybe).
+	\item Exceptions: the \texttt{error} function (note that this is something different than in Java). Java styled exceptions can be implemented using continuations.
+	\item Mutable state: can be implemented as a monad with the type $s \to (a, s)$
+	\item Randomness: implementable using pure pseudorandom generators.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Where do effects come from: Coq}
+\begin{itemize}
+	\item Coq is a theorem prover and pure, total function programming language: \href{https://coq.inria.fr/}{https://coq.inria.fr/}
+	\item Nontermination: impossible because only structural recursion is allowed.
+	\item Input and output: impossible (no built-in IO).
+	\item Exceptions: no Java style exceptions, but can be simulated using continuations.
+	\item Partiality, mutable state, randomness: can be implemented like in Haskell.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{What you can and must express}
+\begin{itemize}
+	\item Types can be used to tell what effects a computation can have.
+	\item In practice, types can tell us more (Haskell) or less (Java) and this is very useful.
+	\item In theory, however, in different languages the same types (like 32-bit integers) can mean different things depending on what effects are available.
+	\item Let's write $\eff{A}{e_1, \dots, e_n}$ for a computation which returns a value of type $A$ and can have effects $e_1, \dots, e_n$.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The meaning of types: Java}
+\begin{itemize}
+	\item The meaning of a function $A \to B$ where $B$ is a primitive type can be seen as $A \to \eff{B}{\bot, \text{IO}, \text{Unchecked}, \dots}$, because this function may loop, perform IO, throw unchecked exceptions. The three dots signify that it can do even more, i. e. return a random value. But we know that it can't return null or a list of $B$s.
+	\item If $B$ is not a primitive type, then $A \to B$ means $A \to \eff{B}{\bot, \text{IO}, \text{Unchecked}, \text{Null}, \dots}$ - now the result can be null.
+	\item If there's a checked exception $E$ in the signature of the function, then the type $A \to B$ can be interpreted as $A \to \eff{B}{\bot, \text{IO}, \text{Unchecked}, \text{Null}, E, \dots}$, where $E$ signifies an effect of throwing the checked exception.
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}{The meaning of types: Haskell}
+\begin{itemize}
+	\item Surprisingly, Haskell is not very far from Java.
+	\item A Haskell function of type $A \to B$ can be interpreted as $A \to \eff{B}{\bot, \text{IO}, \text{Error}, \dots}$, because it may loop, perform IO (through functions like \texttt{unsafePerformIO}), result in an error (like when calling \texttt{head} on an empty list) and many more (because we can do a lot with unsafe IO).
+	\item A function of type $A \to M(B)$, where $M$ is some monad, can be interpreted as $A \to \eff{B}{\bot, \text{IO}, \text{Error}, M, \dots}$, where $M$ signifies the effect of this monad (e.g. nondeterminism for the list monad).
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}{The meaning of types: Coq}
+\begin{itemize}
+	\item Coq is different (otherwise I wouldn't have included it in the examples).
+	\item A Coq function of type $A \to B$ means $A \to \eff{B}{}$, because it can't have any effect - it must terminate, can't perform IO or exceptions, can't return null etc.
+	\item A function of type $A \to M(B)$ for some monad $M$ means $A \to \eff{B}{M}$.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{How effects are managed: Java}
+\begin{itemize}
+	\item Nontermination: you can't do anything about it.
+	\item Partiality: null checks everywhere.
+	\item Exceptions: \texttt{throw}, \texttt{catch}, \texttt{finally}. Checked exceptions appear in function signatures.
+	\item Other effects: because Java is not very effect-aware, you can only manage them ad hoc by using them wisely.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{How effects are handled: Haskell}
+\begin{itemize}
+	\item Nontermination: you can't do anything about it.
+	\item Input and output: the IO monad, but you can't do anything when it's done through \texttt{unsafePerformIO}.
+	\item Exceptions (the \texttt{error} function): this can be caught, but it's a bad idea. Better avoid this effect.
+	\item Other effects: monads (and applicatives too).
+\end{itemize}
+\end{frame}
+
+\begin{frame}{How effects are handled: Coq}
+\begin{itemize}
+	\item The only effects you have come from monads/applicatives, so you use these to handle them.
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}{}
+\begin{itemize}
+	\item
+\end{itemize}
+\end{frame}
+
+\end{document}
