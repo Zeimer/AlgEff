@@ -11,6 +11,8 @@
 \author{Zeimer}
 \date{8 November 2018}
 
+\newcommand{\link}[2]{\href{#2}{\color{blue}{#1}}}
+
 \begin{document}
 
 \frame{\titlepage}
@@ -19,15 +21,43 @@
 
 \section{What's it all about?}
 
-\begin{frame}{Referential transparency}
+\begin{frame}{Referential transparency in natural languages - definitions}
 \begin{itemize}
-	\item \href{https://stackoverflow.com/questions/210835/what-is-referential-transparency}{https://stackoverflow.com/questions/210835/what-is-referential-transparency}
+	\item Referential transparency is a concept coming from \link{analytic philosophy}{https://en.wikipedia.org/wiki/Analytic_philosophy}
+	\item A referent of a phrase is the thing to which that phrase refers. For example, the phrase ``The capital of Scotland'' refers to Edinburgh.
+	\item A context is a part of a phrase with a hole, for example ``\_ is a beautiful city''.
+	\item A context is referentially transparent when we can substitute terms with the same referent for each other without changing the meaning of the sentence.
+	\item A context is referentially opaque if the above is not the case.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Referential transparency in natural languages - examples}
+\begin{itemize}
+	\item Consider the context ``\_ is a beautiful city''.
+	\item The sentences ``The capital of Scotland is a beautiful city'' and ``Edinburgh is a beautiful city'' have the same meaning. This means that this context is referentially transparent.
+	\item Consider the context ``\_ has been the capital of Scotland since 1999''.
+	\item The sentences ``Edinburgh has been the capital of Scotland since 1999'' and ``The capital of Scotland has been the capital of Scotland since 1999`` mean something different, so this context is referentially opaque.
+	\item Thus referential opacity is a form of context dependence, a dependence on the outside world.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Referential transparency in programming languages}
+\begin{itemize}
+	\item The concept was borrowed to programming languages: a name is referentially transparent if 
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}{Referential transparency - examples}
+\begin{itemize}
+	\item \texttt{let x = unsafePerformIO getCPUTime in x == x}
+	\item \texttt{unsafePerformIO getCPUTime == unsafePerformIO getCPUTime}
 \end{itemize}
 \end{frame}
 
 \begin{frame}{Values and computations}
 \begin{itemize}
-	\item Nie wszystkie efekty to monady. Które efekty są algebraiczne, a które nie?
+	\item Not all effects are monads. Which ones are and which ones aren't?
 \end{itemize}
 \end{frame}
 
@@ -174,6 +204,12 @@
 \begin{frame}{}
 \begin{itemize}
 	\item
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Bibliography}
+\begin{itemize}
+	\item \link{Referential transparency}{https://stackoverflow.com/questions/210835/what-is-referential-transparency}{https://stackoverflow.com/questions/210835/what-is-referential-transparency}
 \end{itemize}
 \end{frame}
 
