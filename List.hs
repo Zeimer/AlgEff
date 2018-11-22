@@ -20,7 +20,7 @@ instance Show Value where
     show (Fun f) = "<function>"
 
 lookupEnv :: Name -> Env -> [Value]
-lookupEnv x [] = pure Wrong
+lookupEnv x [] = []
 lookupEnv x ((y, v) : env) = if x == y then pure v else lookupEnv x env
 
 interp :: Term -> Env -> [Value]

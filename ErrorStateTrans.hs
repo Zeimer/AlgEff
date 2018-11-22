@@ -1,3 +1,4 @@
+import Control.Monad.Trans.Except
 import Control.Monad.State
 
 type Name = String
@@ -11,7 +12,7 @@ data Term = Var Name
 
 data Value = Wrong
            | Num Int
-           | Fun (Value -> State Int Value)
+           | Fun (Value -> ExceptT String (State Int) Value)
 
 type Env = [(Name, Value)]
 
@@ -20,11 +21,11 @@ instance Show Value where
     show (Num n) = show n
     show (Fun f) = "<function>"
 
-lookupEnv :: Name -> Env -> State Int Value
-lookupEnv x [] = pure Wrong
+lookupEnv :: Name -> Env -> ExceptT String (State Int) Value
+lookupEnv x [] = --except $ pure "Variable " ++ x ++ " not bound!"
 lookupEnv x ((y, v) : env) = if x == y then pure v else lookupEnv x env
 
-interp :: Term -> Env -> State Int Value
+interp :: Term -> Env -> ExceptT String (State Int) Value
 interp (Var x) env = lookupEnv x env
 interp (Const n) _ = pure (Num n)
 interp (Add t1 t2) env = do
@@ -40,14 +41,14 @@ interp Count _ = do
     n <- get
     pure $ Num n
 
-tick :: State Int ()
+tick :: ExceptT String (State Int) ()
 tick = modify (+1)
 
-add :: Value -> Value -> State Int Value
+add :: Value -> Value -> ExceptT String (State Int) Value
 add (Num n) (Num m) = tick >> (pure $ Num (n + m))
 add _ _ = pure Wrong
 
-apply :: Value -> Value -> State Int Value
+apply :: Value -> Value -> ExceptT String (State Int) Value
 apply (Fun f) x = tick >> f x
 apply _ _ = pure Wrong
 
@@ -61,9 +62,12 @@ term1 = Add Count (Add Count Count)
 term2 :: Term
 term2 = Add (Add Count Count) Count
 
+{-
 test :: Term -> String
 test t =
     case runState (interp t []) 0 of
-        (Wrong, s) -> "<wrong> (in " ++ show s ++ " steps)"
-        (Num n, s) -> show n ++ " (in " ++ show s ++ " steps)"
-        (Fun f, s) -> "<function> (in " ++ show s ++ " steps)"
+        Left msg -> msg
+        Right (Wrong, s) -> "<wrong> (in " ++ show s ++ " steps)"
+        Right (Num n, s) -> show n ++ " (in " ++ show s ++ " steps)"
+        Right (Fun f, s) -> "<function> (in " ++ show s ++ " steps)"
+-}
