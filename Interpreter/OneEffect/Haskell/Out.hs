@@ -13,6 +13,11 @@ data Value = Wrong
            | Num Int
            | Fun (Value -> Writer String Value)
 
+instance Show Value where
+    show Wrong = "<wrong>"
+    show (Num n) = show n
+    show (Fun _) = "<function>"
+
 type Env = [(Name, Value)]
 
 lookupEnv :: Name -> Env -> Writer String Value
@@ -49,17 +54,16 @@ showwriter w =
     case runWriter w of
         (v, w) -> "log: " ++ w ++ "\nresult: " ++ show v
 
-instance Show Value where
-    show Wrong = "<wrong>"
-    show (Num n) = show n
-    show (Fun _) = "<function>"
+test :: Term -> String
+test t = showwriter $ interp t []
 
 term0 :: Term
 term0 = App (Lam "x" (Add (Var "x") (Var "x")))
             (Add (Const 10) (Const 11))
 
-test :: Term -> String
-test t = showwriter $ interp t []
+out_term0 :: Term
+out_term0 = Out (Add (Out (Const 42)) (Out (Const 23456789)))
 
-testIO :: Term -> IO ()
-testIO t = putStrLn (test t)
+main :: IO ()
+main = do
+    forM_ [term0, out_term0] (putStrLn . test)

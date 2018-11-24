@@ -83,7 +83,7 @@ fun test(t : term) : div string
         return x -> show(x : value)
         err(msg) -> msg
     }
-    h(fun() {interp(t, [])})
+    h {interp(t, [])}
 }
 
 fun main()

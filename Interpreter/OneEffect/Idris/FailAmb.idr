@@ -58,11 +58,11 @@ term0 : Term
 term0 = App (Lam "x" (Add (Var "x") (Var "x")))
             (Add (Const 10) (Const 11))
 
-term1 : Term
-term1 = Fail
+failamb_term0 : Term
+failamb_term0 = Add (Const 42) Fail
 
-term2 : Term
-term2 = Amb (Const 100) (Const 1234567890)
+failamb_term1 : Term
+failamb_term1 = Amb (Const 100) (Const 1234567890)
 
 test : Term -> String
 test t = show $ the (Maybe _) $ run (interp t [])
@@ -72,6 +72,5 @@ test' t = show $ the (List _) $ run (interp t [])
 
 main : IO ()
 main = do
-    for [term0, term1, term2] $ \t => putStrLn $ test t
-    for [term0, term1, term2] $ \t => putStrLn $ test' t
-    pure ()
+    for_ [term0, failamb_term0, failamb_term1] (putStrLn . test)
+    for_ [term0, failamb_term0, failamb_term1] (putStrLn . test')

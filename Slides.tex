@@ -25,10 +25,10 @@
 \begin{frame}{Referential transparency in natural languages - definitions}
 \begin{itemize}
 	\item Referential transparency is a concept coming from \link{analytic philosophy}{https://en.wikipedia.org/wiki/Analytic_philosophy}
-	\item A referent of a phrase is the thing to which that phrase refers. For example, the phrase ``The capital of Scotland'' refers to Edinburgh.
-	\item A context is a part of a phrase with a hole, for example ``\_ is a beautiful city''.
-	\item A context is referentially transparent when we can substitute terms with the same referent for each other without changing the meaning of the sentence.
-	\item A context is referentially opaque if the above is not the case.
+	\item A \textbf{referent} of a phrase is the thing to which that phrase refers. For example, the phrase ``The capital of Scotland'' refers to Edinburgh.
+	\item A \textbf{context} is a phrase with a hole, for example ``\_ is a beautiful city''.
+	\item A context is \textbf{referentially transparent} when we can substitute terms with the same referent for each other without changing the meaning of the sentence.
+	\item A context is \textbf{referentially opaque} if the above is not the case.
 \end{itemize}
 \end{frame}
 
@@ -45,8 +45,8 @@
 \begin{frame}{Referential transparency in programming languages - definitions}
 \begin{itemize}
 	\item The concept was borrowed to programming languages, but since programmers rarely talk about contexts, it evolved and refers to functions.
-	\item A function is referentially transparent iff its output depends only on its input (or equivalently: iff called many times with the same arguments it gives the same result).
-	\item A programming language is referentially transparent iff all functions definable in this language are referentially transparent.
+	\item A function is \textbf{referentially transparent} iff its output depends only on its input (or equivalently: iff called many times with the same arguments it gives the same result).
+	\item A programming language is \textbf{referentially transparent} iff all functions definable in this language are referentially transparent.
 \end{itemize}
 \end{frame}
 
@@ -54,7 +54,7 @@
 \begin{itemize}
 	\item Java is not referentially transparent, because a function call like \texttt{System.currentTimeMillis()} produces a different value each time.
 	\item Haskell is also not referentially transparent, because of a similar problem: \texttt{unsafePerformIO getCPUTime} returns a different value each time it's called.
-	\item \link{Coq}{https://coq.inria.fr/} is a theorem prover and pure, total function programming language. It is referentially transparent - you can't get the current time nor anything like that.
+	\item \link{Coq}{https://coq.inria.fr/} is a theorem prover and a total functional programming language. It is referentially transparent - you can't get the current time nor anything like that.
 	\item As we see, the lack of referential transparency in programming languages has a similar cause to that from natural languages - context dependence, which means access to some external state.
 \end{itemize}
 \end{frame}
@@ -63,34 +63,36 @@
 \begin{itemize}
 	\item A concept related to referential transparency is purity. A function is \textbf{pure} if it has no \textbf{side effects}, which are understood as (read and/or write) access to some external state.
 	\item This can be generalized a bit to expressions: an expressions is \textbf{pure} if evaluating it produces no side effects.
-	\item Accordingly a programming language is pure (or purely functional) if all it's functions/expressions are pure.
+	\item Accordingly a programming language is \textbf{pure} if all its functions/expressions are pure.
 	\item Note: sometimes the definition is expanded so that nontermination is considered impure.
 \end{itemize}
 \end{frame}
 
 \begin{frame}{Purity - examples}
 \begin{itemize}
-	\item Since purity implies referential transparency, neither Java nor Haskell are pure.
+	\item Java is not pure because objects have state. Methods have access to the object's state through the pointer \texttt{this}, so they are not pure.
+	\item Haskell is not pure because of the very same thing that prevents it from being referentially transparent - \texttt{unsafePerformIO}.
 	\item But Coq is pure - this is because it's a theorem prover meant for doing mathematics. Yes, you can't do any IO in it, but you can prove theorems! It's also pure in the stronger sense that it doesn't allow nontermination - thus it's not Turing complete.
 \end{itemize}
 \end{frame}
 
 \begin{frame}{Referential transparency and purity are not absolute}
 \begin{itemize}
-	\item Both referential transparency and purity are very strong properties for a language to posses. Since barely any languages have them (except Coq, of course), it is more useful to consider languages more or less referentially transparent/pure depending on what they enforce and encourage.
-	\item In Haskell it's easier to write referentially transparent functions. It is encouraged, it is enforced by the type system and getting around it requires some hackery. Therefore we can say that Haskell is more referentially transparent than Java.
-	\item The same goes for purity - in Java even the simplest ``Hello world'' program is impure. In Haskell, in contrast, most of the IO is pure (why and how we will learn soon). Therefore, Haskell is more pure than Java.
+	\item Both referential transparency and purity are very strong properties for a language to possess. Since barely any languages have them (except for Coq, of course), it is more useful to consider languages more or less referentially transparent/pure depending on what they enforce and encourage.
+	\item In Haskell it's easier to write referentially transparent functions. It is encouraged, it is enforced by the type system and getting around it requires a conscious decision. Therefore we can say that Haskell is \textbf{more referentially transparent} than Java.
+	\item The same goes for purity - in Java even the simplest ``Hello world'' program is impure. In contrast, in Haskell most of the IO is pure (why and how we will learn soon). Therefore, Haskell is \textbf{more pure} than Java.
 \end{itemize}
 \end{frame}
 
 \begin{frame}{Why bother?}
 \begin{itemize}
-	\item Why should we care about about referential transparency and purity?
-	\item They allow for certain optimizations.
-	\item Enforcing them prevents some silly mistakes.
+	\item Why should we care about referential transparency and purity?
+	\item They prevent some silly mistakes.
+	\item They allow the compiler to perform certain optimizations.
 	\item They facilitate reasoning, especially equational reasoning.
-	\item They are compositional, which allows decomposing big architectures into simple components.
-	\item Therefore it would be a good idea to have some conceptual, formal and technological tool to make referential transparency and purity easier.
+	\item They facilitate testing using automated tools (like Haskell's QuickCheck).
+	\item They aid compositionality, thus making it easier to design software architectures.
+	\item Therefore it would be a good idea to have some conceptual and formal tools (and language support) to make referential transparency and purity easier.
 \end{itemize}
 \end{frame}
 
@@ -106,20 +108,20 @@
 
 \begin{frame}{Values and computations - do be do be do}
 \begin{itemize}
-	\item Now here's the trick to get free referential transparency and purity: reification.
-	\item Instead of doing something (performing a computation), we can create an object (a value) which tells us how to perform that computation.
+	\item Now here's the trick to get free referential transparency and purity: \textbf{reification}.
+	\item Instead of performing a computation, we can create an object (a value) which tells us how to perform that computation.
 	\item Instead of performing many computations, we can put together the objects that represent them.
 	\item In the meantime we can mess with these objects, change them and interpret/transform them into something else without introducing any impurity/opacity.
-	\item Finally, we can put that big object representing all our (remaining) impure computations into a single point of contact with the outside world (usually the \texttt{main} function. This is why most of Haskell IO is pure and referentially transparent.
+	\item Finally, we can push that big object representing all our computations out of our language through a single point of contact with the outside world (usually the \texttt{main} function). This is why Haskell IO not using \texttt{System.IO.Unsafe} is pure and referentially transparent.
 \end{itemize}
 \end{frame}
 
 \begin{frame}{Values and computations - example}
 \begin{itemize}
 	\item Consider the type $E \to A$.
-	\item We can think that elements of this are values. They are pure functions, after all.
+	\item We can think that elements of this type are values. They are pure functions, after all.
 	\item We can, however, also see them as computations of type $A$ that depend on some external environment $E$.
-	\item This is the essence of the above trick that applies to any computation whatsoever.
+	\item This is the essence of the above trick that applies to any computation whatsoever: we can represent computations using values.
 \end{itemize}
 \end{frame}
 
@@ -127,7 +129,7 @@
 \begin{itemize}
 	\item Are we done? Not really. We said we want to put computations (or rather, their descriptions) together and mess with them in the meantime.
 	\item For this, we have to dissect computations into parts. A computation like ``add $n$ to $m$ and print the result to the screen'' has a pure part (addition) and an impure part (printing).
-	\item By an effect \textbf{effect} I will mean an impure part of a computation.
+	\item I will call an impure part of a computation an \textbf{effect}.
 \end{itemize}
 \end{frame}
 
@@ -167,15 +169,15 @@
 \begin{itemize}
 	\item It is usually said that types classify values. But since we distinguished values from computations and also stated that values can be used to describe computations, a question about the meaning of types arises quite naturally.
 	\item In theory, languages like Java and Haskell often share many types, like \texttt{boolean}/\texttt{Bool}. In practice, however, these types can mean different things, if we consider the kinds of effects that the language allows.
-	\item Let's write $\eff{A}{e_1, \dots, e_n}$ for a computation which returns a value of type $A$ and can have effects $e_1, \dots, e_n$.
+	\item Let's write $\eff{A}{e_1, \dots, e_n}$ for a computation which (potentially) returns a value of type $A$ and can have effects $e_1, \dots, e_n$.
 \end{itemize}
 \end{frame}
 
 \begin{frame}{The meaning of types: Java}
 \begin{itemize}
-	\item The meaning of a primitive type $A$ can be seen as $\eff{A}{\bot, \text{IO}, \text{Unchecked}, \dots}$, because this type contains values resulting from function calls that may loop, perform IO, throw unchecked exceptions etc. The three dots signify that it can do even more, like returning a random value. We know, however, that $A$ doesn't contain the \texttt{null} value.
-	\item If $A$ is not a primitive type, then it means $\eff{A}{\bot, \text{IO}, \text{Unchecked}, \text{Null}, \dots}$ - now the result can be null.
-	\item If there's a checked exception $E$ in the signature of a function of type $A \to B$, then its type can be interpreted as $A \to \eff{B}{\bot, \text{IO}, \text{Unchecked}, \text{Null}, E, \dots}$, where $E$ signifies an effect of throwing the checked exception.
+	\item The meaning of a primitive type $A$ can be seen as $\eff{A}{\bot, \text{IO}, \text{Unchecked}, \dots}$, because this type contains computations resulting from function calls that may loop, perform IO, throw unchecked exceptions etc. The three dots signify that it can do even more, like returning a random value. We know, however, that this computation cannot result in a \texttt{null}.
+	\item If $A$ is not a primitive type, then it means $\eff{A}{\bot, \text{IO}, \text{Unchecked}, \text{Null}, \dots}$ - now the result can be a \texttt{null}.
+	\item If there's a checked exception $E$ in the signature of a Java function of type $A \to B$, then its type can be interpreted as $A \to \eff{B}{\bot, \text{IO}, \text{Unchecked}, \text{Null}, \mathcal{E}, \dots}$, where $\mathcal{E}$ signifies an effect of throwing the checked exception $E$.
 \end{itemize}
 \end{frame}
 
@@ -183,7 +185,7 @@
 \begin{itemize}
 	\item Surprisingly, Haskell is not very far from Java.
 	\item A Haskell type $a$ can be interpreted as $\eff{a}{\bot, \text{IO}, \text{Error}, \dots}$, because values of this type may loop, perform IO (through functions like \texttt{unsafePerformIO}), result in an error (like when calling \texttt{head} on an empty list) and many more (because we can do a lot with unsafe IO).
-	\item The type $m\ a$, where $m$ is some monad, can be interpreted as $\eff{a}{\bot, \text{IO}, \text{Error}, m, \dots}$, where $m$ signifies the effect of this monad (e.g. nondeterminism for the list monad).
+	\item The type $m\ a$, where $m$ is some monad, can be interpreted as $\eff{a}{\bot, \text{IO}, \text{Error}, \mathcal{M}, \dots}$, where $\mathcal{M}$ signifies the effect of the monad $m$ (e.g. nondeterminism for the list monad).
 \end{itemize}
 \end{frame}
 
@@ -191,7 +193,7 @@
 \begin{itemize}
 	\item Coq is different (otherwise I wouldn't have included it in the examples).
 	\item A Coq type $A$ means $\eff{A}{}$, because it can't have any effect - it must terminate, can't perform IO or exceptions, can't return null etc.
-	\item The type $M\ A$ for some monad $M$ can be interpreted as $\eff{A}{M}$.
+	\item The type $M\ A$ for some monad $M$ can be interpreted as $\eff{A}{\mathcal{M}}$, where $\mathcal{M}$ is the effect of this monad.
 \end{itemize}
 \end{frame}
 
@@ -199,7 +201,7 @@
 \begin{itemize}
 	\item Thanks to the distinction between values and computations and the concept of an effect, we can now state the goal of our undertaking.
 	\item It is good to have values under control. This is the business of a type system. Types classify values, tell us how they can be constructed and used, tell us when we can compose things and prevent us from doing silly mistakes.
-	\item Since a computation is a value and some effects, what we would like to have is therefore (loosely speaking) an effect system - a way of classifying, creating, using and composing effects.
+	\item Since a computation is a value and some effects, what we would like to have is therefore (loosely speaking) an \textbf{effect system} - a way of classifying, creating, using and composing effects.
 	\item Before coming up with our own, let's see how such effect systems are realized in practice (we can regard any language as having an effect system, just like we can regard any language as having types, even if it's just a single one).
 \end{itemize}
 \end{frame}
@@ -217,9 +219,9 @@
 \begin{frame}{Where do effects come from: Java}
 \begin{itemize}
 	\item Input and output: library functions for performing IO.
-	\item Partiality: objects of any class can be null.
+	\item Partiality: objects of any class can be \texttt{null}.
 	\item Exceptions: built-in exceptions mechanism.
-	\item Mutable state: assignment (it's not global, but objects have internal state that can be accessed by methods).
+	\item Mutable state: assignment.
 	\item Randomness: implementable (impure pseudorandom generators).
 	\item Nontermination: unrestricted while loop.
 \end{itemize}
@@ -228,9 +230,9 @@
 \begin{frame}{Where do effects come from: Haskell}
 \begin{itemize}
 	\item Input and output: built-in IO type and functions for using it.
-	\item Partiality: can be implemented using algebraic data types (the type Maybe).
+	\item Partiality: can be implemented using algebraic data types (the type \texttt{Maybe}).
 	\item Exceptions: the \texttt{error} function (note that this is something different than in Java). Java style exceptions can be implemented using continuations.
-	\item Mutable state: can be implemented as a monad with the type $s \to (a, s)$
+	\item Mutable state: can be implemented with the type $s \to (a, s)$
 	\item Randomness: implementable using pure pseudorandom generators. The seed can be taken from IO.
 	\item Nontermination: unrestricted recursive calls.
 \end{itemize}
@@ -242,19 +244,20 @@
 	\item Partiality, mutable state, randomness: can be implemented like in Haskell.
 	\item Input and output: impossible (no built-in IO).
 	\item Nontermination: impossible because only structural recursion is allowed.
+	\item To sum up: all effects in Coq have to be explicitly simulated with pure values.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{How effects are managed: Java}
+\begin{frame}{How effects are handled: Java}
 \begin{itemize}
 	\item Partiality: null checks everywhere.
 	\item Exceptions: \texttt{throw}, \texttt{catch}, \texttt{finally}. Checked exceptions appear in function signatures.
-	\item Other effects: because Java is not very effect-aware, you can only manage them ad hoc by using them wisely.
+	\item Other effects: because Java is not very effect-aware, you can only handle them ad hoc by using them wisely.
 	\item Nontermination: you can't do anything about it.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{How effects are managed: Haskell}
+\begin{frame}{How effects are handled: Haskell}
 \begin{itemize}
 	\item Exceptions (the \texttt{error} function): this can be caught, but it's a bad idea. Better avoid this effect.
 	\item Input and output: the IO monad, but you can't do anything when it's done through \texttt{unsafePerformIO}.
@@ -263,7 +266,7 @@
 \end{itemize}
 \end{frame}
 
-\begin{frame}{How effects are managed: Coq}
+\begin{frame}{How effects are handled: Coq}
 \begin{itemize}
 	\item The only effects you have come from monads/applicatives, so you use these to handle them.
 \end{itemize}
@@ -274,12 +277,22 @@
 \begin{frame}{A comparison of approaches}
 \begin{itemize}
 	\item The ad-hoc way of handling of effects, as done in Java and most mainstream languages is not too wise. It should be burnt at the stake and then forgotten.
-	\item Monads are currently the most popular way of dealing with effects in languages which treat them seriously. The monadic techniques come in various flavours: ordinary monads, transformers, monadic classes and free monads.
+	\item Monads are currently the most popular way of handling effects in languages which treat them seriously. The monadic techniques come in various flavours: ordinary monads, transformers, monadic classes and free monads.
 	\item Algebraic Effects is a new idea for providing languages with an effect system. They come in two main flavours:
 	\begin{itemize}
-		\item Library-level: Haskell's extensible-effects and Idris's Effect.
+		\item Library-level: Haskell's extensible-effects and Idris' Effects.
 		\item Languages-level: languages like Eff, Koka and Frank.
 	\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{References}
+\begin{itemize}
+	\item \link{Referential transparency}{https://stackoverflow.com/questions/210835/what-is-referential-transparency}
+	\item \link{Free monads}{http://www.haskellforall.com/2012/07/purify-code-using-free-monads.html}
+	\item \link{Idris}{http://docs.idris-lang.org/en/latest/index.html}
+	\item \link{Koka}{https://koka-lang.github.io/koka/doc/kokaspec.html}
+	\item \link{Repo with code of the examples (and of these slides)}{https://github.com/Zeimer/AlgEff}
 \end{itemize}
 \end{frame}
 

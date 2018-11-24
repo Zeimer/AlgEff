@@ -40,15 +40,18 @@ interp (Amb t1 t2) env = interp t1 env ++ interp t2 env
 
 add :: Value -> Value -> [Value]
 add (Num n) (Num m) = pure $ Num (n + m)
-add _ _ = pure Wrong
+add _ _ = []
 
 apply :: Value -> Value -> [Value]
 apply (Fun f) x = f x
-apply _ _ = pure Wrong
+apply _ _ = []
 
 term0 :: Term
 term0 = App (Lam "x" (Add (Var "x") (Var "x")))
             (Add (Const 10) (Const 11))
 
-test :: Term -> String
-test t = show $ interp t []
+failamb_term0 :: Term
+failamb_term0 = Add (Const 42) Fail
+
+failamb_term1 :: Term
+failamb_term1 = Amb (Const 100) (Const 1234567890)

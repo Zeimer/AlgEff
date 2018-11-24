@@ -55,15 +55,17 @@ term0 :: Term
 term0 = App (Lam "x" (Add (Var "x") (Var "x")))
             (Add (Const 10) (Const 11))
 
-term1 :: Term
-term1 = Add Count (Add Count Count)
+count_term0 :: Term
+count_term0 = Add Count (Add Count Count)
 
-term2 :: Term
-term2 = Add (Add Count Count) Count
+count_term1 :: Term
+count_term1 = Add (Add Count Count) Count
 
 test :: Term -> String
 test t =
     case runState (interp t []) 0 of
-        (Wrong, s) -> "<wrong> (in " ++ show s ++ " steps)"
-        (Num n, s) -> show n ++ " (in " ++ show s ++ " steps)"
-        (Fun f, s) -> "<function> (in " ++ show s ++ " steps)"
+        (v, s) -> show v ++ " (in " ++ show s ++ " steps)"
+
+main :: IO ()
+main = do
+    forM_ [term0, count_term0, count_term1] (putStrLn . test)
