@@ -23,16 +23,6 @@ rectype value
     Fun(f : value -> <div, state<int>> value)
 }
 
-fun show(v : value) : string
-{
-    match(v)
-    {
-        Wrong -> "<wrong>"
-        Num(n) -> show(n)
-        Fun(_) -> "<function>"
-    }
-}
-
 alias env = list<(name, value)>
 
 fun lookupEnv(x : name, env : env) : value
@@ -81,9 +71,28 @@ fun interp(t : term, env : env) : <div, state<int>> value
     }
 }
 
-val term0 : term =
-    App(Lam("x", Add(Var("x"), Var("x"))),
-        Add(Const(10), Const(11)))
+fun show(t : term) : string
+{
+    match(t)
+    {
+        Var(x) -> x
+        Const(n) -> show(n)
+        Add(t1, t2) -> show(t1) + " + (" + show(t2) + ")"
+        Lam(x, t') -> "λ" + x + "." + show(t')
+        App(t1, t2) -> "(" + show(t1) + ")" + show(t2)
+        Count -> "Count"
+    }
+}
+
+fun show(v : value) : string
+{
+    match(v)
+    {
+        Wrong -> "<wrong>"
+        Num(n) -> show(n)
+        Fun(_) -> "<function>"
+    }
+}
 
 val handle_state = handler(s)
 {
@@ -94,13 +103,30 @@ val handle_state = handler(s)
 
 fun test(t : term) : div string
 {
-    match(handle_state(0, fun() {interp(t, [])}))
+    match(handle_state(0) {interp(t, [])})
     {
         (v, s) -> show(v) + " (in " + show(s) + " steps)"
     }
 }
 
+val term0 : term =
+    App(Lam("x", Add(Var("x"), Var("x"))),
+        Add(Const(10), Const(11)))
+
+val count_term0 : term =
+    Add(Count, Add(Count, Count))
+
+val count_term1 : term =
+    Add(Add(Count, Count), Count)
+
+val testTerms : list<term> =
+    [term0, count_term0, count_term1]
+
 fun main()
 {
-    term0.test.println
+    foreach(testTerms, fun(t)
+    {
+        println("Interpreting " + show(t))
+        t.test.println
+    })
 }

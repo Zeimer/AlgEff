@@ -21,16 +21,6 @@ rectype value
     Fun(f : value -> <div, err> value)
 }
 
-fun show(v : value) : string
-{
-    match(v)
-    {
-        Wrong -> "<wrong>"
-        Num(n) -> show(n)
-        Fun(_) -> "<function>"
-    }
-}
-
 alias env = list<(name, value)>
 
 fun lookupEnv(x : name, env : env) : <err> value
@@ -72,21 +62,58 @@ fun interp(t : term, env : env) : <div, err> value
     }
 }
 
+fun show(t : term) : string
+{
+    match(t)
+    {
+        Var(x) -> x
+        Const(n) -> show(n)
+        Add(t1, t2) -> show(t1) + " + (" + show(t2) + ")"
+        Lam(x, t') -> "λ" + x + "." + show(t')
+        App(t1, t2) -> "(" + show(t1) + ")" + show(t2)
+    }
+}
+
+fun show(v : value) : string
+{
+    match(v)
+    {
+        Wrong -> "<wrong>"
+        Num(n) -> show(n)
+        Fun(_) -> "<function>"
+    }
+}
+
+val handle_err = handler
+{
+    return v -> Right(v)
+    err(msg) -> Left(msg)
+}
+
+fun test(t : term) : div string
+{
+    match(handle_err {interp(t, [])})
+    {
+        Left(msg) -> msg
+        Right(v) -> show(v : value)
+    }
+}
+
 val term0 : term =
     App(Lam("x", Add(Var("x"), Var("x"))),
         Add(Const(10), Const(11)))
 
-fun test(t : term) : div string
-{
-    val h = handler
-    {
-        return x -> show(x : value)
-        err(msg) -> msg
-    }
-    h {interp(t, [])}
-}
+val error_term0 : term =
+    Var("OBOŻETOJESTZBOŻE")
+
+val testTerms : list<term> =
+    [term0, error_term0]
 
 fun main()
 {
-    term0.test.println
+    foreach(testTerms, fun(t)
+    {
+        println("Interpreting " + show(t))
+        t.test.println
+    })
 }

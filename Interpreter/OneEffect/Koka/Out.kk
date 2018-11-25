@@ -22,16 +22,6 @@ rectype value
     Fun(f : value -> <div, log<string>> value)
 }
 
-fun show(v : value) : string
-{
-    match(v)
-    {
-        Wrong -> "<wrong>"
-        Num(n) -> show(n)
-        Fun(_) -> "<function>"
-    }
-}
-
 alias env = list<(name, value)>
 
 fun lookupEnv(x : name, env : env) : value
@@ -79,31 +69,54 @@ fun interp(t : term, env : env) : <div, log<string>> value
     }
 }
 
-val handle_concat = handler(s)
+fun show(t : term) : string
+{
+    match(t)
+    {
+        Var(x) -> x
+        Const(n) -> show(n)
+        Add(t1, t2) -> show(t1) + " + (" + show(t2) + ")"
+        Lam(x, t') -> "λ" + x + "." + show(t')
+        App(t1, t2) -> "(" + show(t1) + ")" + show(t2)
+        Out(t') -> "Out(" + show(t') + ")"
+    }
+}
+
+fun show(v : value) : string
+{
+    match(v)
+    {
+        Wrong -> "<wrong>"
+        Num(n) -> show(n)
+        Fun(_) -> "<function>"
+    }
+}
+
+val handle_log_string = handler(s)
 {
     return v -> (v, s)
-    log(msg : string) -> resume((), "\n" + msg + s)
+    log(msg : string) -> resume((), s + "\n" + msg)
 }
 
-val handle_toList = handler(l)
+fun test_string(t : term) : div string
 {
-    return v -> (v, l)
-    log(msg : string) -> resume((), Cons(msg, l))
-}
-
-fun test(t : term) : div string
-{
-    match(handle_concat("") {interp(t, [])})
+    match(handle_log_string("") {interp(t, [])})
     {
         (v, s) -> "log: " + s + "\nvalue: " + show(v)
     }
 }
 
-fun test'(t : term) : div string
+val handle_log_list = handler(l)
 {
-    match(handle_toList([]) {interp(t, [])})
+    return v -> (v, l)
+    log(msg : string) -> resume((), Cons(msg, l))
+}
+
+fun test_list(t : term) : div string
+{
+    match(handle_log_list([]) {interp(t, [])})
     {
-        (v, l) -> "log: " + show-list(l, show) + "\nvalue: " + show(v)
+        (v, l) -> "log: " + show-list(l.reverse, show) + "\nvalue: " + show(v)
     }
 }
 
@@ -111,14 +124,20 @@ val term0 : term =
     App(Lam("x", Add(Var("x"), Var("x"))),
         Add(Const(10), Const(11)))
 
-val term1 : term =
-    App(Lam("x", Add(Var("x"), Var("x"))),
-        Add(Out(Const(10)), Out(Const(11))))
+val out_term0 : term =
+    Out(Add(Out(Const(42)), Out(Const(23456789))))
+
+val testTerms : list<term> =
+    [term0, out_term0]
 
 fun main()
 {
-    term0.test.println
-    term1.test.println
-    term0.test'.println
-    term1.test'.println
+    foreach([test_string, test_list], fun(test)
+    {
+        foreach(testTerms, fun(term)
+        {
+            println("Interpreting " + show(term))
+            term.test.println
+        })
+    })
 }

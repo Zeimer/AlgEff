@@ -1,3 +1,5 @@
+import Control.Monad
+
 type Name = String
 
 data Term = Var Name
@@ -14,14 +16,17 @@ data Value = Wrong
 
 type Env = [(Name, Value)]
 
-instance Show Value where
-    show Wrong = "<wrong>"
-    show (Num n) = show n
-    show (Fun f) = "<function>"
-
 lookupEnv :: Name -> Env -> [Value]
 lookupEnv x [] = []
 lookupEnv x ((y, v) : env) = if x == y then pure v else lookupEnv x env
+
+add :: Value -> Value -> [Value]
+add (Num n) (Num m) = pure $ Num (n + m)
+add _ _ = []
+
+apply :: Value -> Value -> [Value]
+apply (Fun f) x = f x
+apply _ _ = []
 
 interp :: Term -> Env -> [Value]
 interp (Var x) env = lookupEnv x env
@@ -38,13 +43,22 @@ interp (App t1 t2) env = do
 interp Fail _ = []
 interp (Amb t1 t2) env = interp t1 env ++ interp t2 env
 
-add :: Value -> Value -> [Value]
-add (Num n) (Num m) = pure $ Num (n + m)
-add _ _ = []
+instance Show Term where
+    show (Var x) = x
+    show (Const n) = show n
+    show (Add t1 t2) = show t1 ++ " + (" ++ show t2 ++ ")"
+    show (Lam x t) = "λ" ++ x ++ "." ++ show t
+    show (App t1 t2) = "(" ++ show t1 ++ ")" ++ show t2
+    show Fail = "Fail"
+    show (Amb t1 t2) = "Amb (" ++ show t1 ++ ") (" ++ show t2 ++ ")"
 
-apply :: Value -> Value -> [Value]
-apply (Fun f) x = f x
-apply _ _ = []
+instance Show Value where
+    show Wrong = "<wrong>"
+    show (Num n) = show n
+    show (Fun f) = "<function>"
+
+test :: Term -> String
+test t = show (interp t [])
 
 term0 :: Term
 term0 = App (Lam "x" (Add (Var "x") (Var "x")))
@@ -55,3 +69,12 @@ failamb_term0 = Add (Const 42) Fail
 
 failamb_term1 :: Term
 failamb_term1 = Amb (Const 100) (Const 1234567890)
+
+testTerms :: [Term]
+testTerms = [term0, failamb_term0, failamb_term1]
+
+main :: IO ()
+main = do
+    forM_ testTerms $ \t -> do
+        putStrLn $ "Interpreting " ++ show t
+        putStrLn $ test t

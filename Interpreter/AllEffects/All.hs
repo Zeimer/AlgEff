@@ -65,6 +65,9 @@ term0 :: Term
 term0 = App (Lam "x" (Add (Var "x") (Var "x")))
             (Add (Const 10) (Const 11))
 
+error_term0 :: Term
+error_term0 = Var "OBOŻETOJESTZBOŻE"
+
 count_term0 :: Term
 count_term0 = Add Count (Add Count Count)
 

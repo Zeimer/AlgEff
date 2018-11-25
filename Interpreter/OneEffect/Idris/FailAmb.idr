@@ -19,11 +19,6 @@ data Value = Wrong
 Env : Type
 Env = List (Name, Value)
 
-Show Value where
-    show Wrong = "<wrong>"
-    show (Num n) = show n
-    show (Fun f) = "<function>"
-
 lookupEnv : Name -> Env -> Eff Value [SELECT]
 lookupEnv x [] = select []
 lookupEnv x ((y, v) :: env) = if x == y then pure v else lookupEnv x env
@@ -54,6 +49,26 @@ interp (Amb t1 t2) env = do
     v2 <- interp t2 env
     select [v1, v2]
 
+Show Term where
+    show (Var x) = x
+    show (Const n) = show n
+    show (Add t1 t2) = show t1 ++ " + (" ++ show t2 ++ ")"
+    show (Lam x t) = "λ" ++ x ++ "." ++ show t
+    show (App t1 t2) = "(" ++ show t1 ++ ")" ++ show t2
+    show Fail = "Fail"
+    show (Amb t1 t2) = "Amb (" ++ show t1 ++ ") (" ++ show t2 ++ ")"
+
+Show Value where
+    show Wrong = "<wrong>"
+    show (Num n) = show n
+    show (Fun f) = "<function>"
+
+test_Maybe : Term -> String
+test_Maybe t = show $ the (Maybe _) $ run (interp t [])
+
+test_List : Term -> String
+test_List t = show $ the (List _) $ run (interp t [])
+
 term0 : Term
 term0 = App (Lam "x" (Add (Var "x") (Var "x")))
             (Add (Const 10) (Const 11))
@@ -64,13 +79,16 @@ failamb_term0 = Add (Const 42) Fail
 failamb_term1 : Term
 failamb_term1 = Amb (Const 100) (Const 1234567890)
 
-test : Term -> String
-test t = show $ the (Maybe _) $ run (interp t [])
-
-test' : Term -> String
-test' t = show $ the (List _) $ run (interp t [])
+testTerms : List Term
+testTerms = [term0, failamb_term0, failamb_term1]
 
 main : IO ()
 main = do
-    for_ [term0, failamb_term0, failamb_term1] (putStrLn . test)
-    for_ [term0, failamb_term0, failamb_term1] (putStrLn . test')
+    putStrLn "Testing the Maybe handler"
+    for_ testTerms $ \t => do
+        putStrLn $ "Interpreting " ++ show t
+        putStrLn $ test_Maybe t
+    putStrLn "Testing the List handler"
+    for_ testTerms $ \t => do
+        putStrLn $ "Interpreting " ++ show t
+        putStrLn $ test_List t

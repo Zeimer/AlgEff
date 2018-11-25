@@ -18,11 +18,6 @@ data Value = Wrong
 Env : Type
 Env = List (Name, Value)
 
-Show Value where
-    show Wrong = "<wrong>"
-    show (Num n) = show n
-    show (Fun f) = "<function>"
-
 lookupEnv : Name -> Env -> Eff Value [STATE Int]
 lookupEnv x [] = pure Wrong
 lookupEnv x ((y, v) :: env) = if x == y then pure v else lookupEnv x env
@@ -60,21 +55,37 @@ interp Count _ = do
     n <- get
     pure $ Num n
 
-term0 : Term
-term0 = App (Lam "x" (Add (Var "x") (Var "x")))
-            (Add (Const 10) (Const 11))
+Show Term where
+    show (Var x) = x
+    show (Const n) = show n
+    show (Add t1 t2) = show t1 ++ " + (" ++ show t2 ++ ")"
+    show (Lam x t) = "λ" ++ x ++ "." ++ show t
+    show (App t1 t2) = "(" ++ show t1 ++ ")" ++ show t2
+    show Count = "Count"
 
-term1 : Term
-term1 = Add Count (Add Count Count)
-
-term2 : Term
-term2 = Add (Add Count Count) Count
+Show Value where
+    show Wrong = "<wrong>"
+    show (Num n) = show n
+    show (Fun f) = "<function>"
 
 test : Term -> String
 test t = show $ runPure (interp t [])
 
+term0 : Term
+term0 = App (Lam "x" (Add (Var "x") (Var "x")))
+            (Add (Const 10) (Const 11))
+
+count_term0 : Term
+count_term0 = Add Count (Add Count Count)
+
+count_term1 : Term
+count_term1 = Add (Add Count Count) Count
+
+testTerms : List Term
+testTerms = [term0, count_term0, count_term1]
+
 main : IO ()
 main = do
-    putStrLn $ "term0: " ++ test term0
-    putStrLn $ "term1: " ++ test term1
-    putStrLn $ "term2: " ++ test term2
+    for_ testTerms $ \t => do
+        putStrLn $ "Interpreting " ++ show t
+        putStrLn $ test t

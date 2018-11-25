@@ -24,16 +24,6 @@ rectype value
     Fun(f : value -> <div, amb> value)
 }
 
-fun show(v : value) : string
-{
-    match(v)
-    {
-        Wrong -> "<wrong>"
-        Num(n) -> show(n)
-        Fun(_) -> "<function>"
-    }
-}
-
 alias env = list<(name, value)>
 
 fun lookupEnv(x : name, env : env) : value
@@ -77,39 +67,91 @@ fun interp(t : term, env : env) : <div, amb> value
     }
 }
 
-val handle_list = handler
+fun show(t : term) : string
+{
+    match(t)
+    {
+        Var(x) -> x
+        Const(n) -> show(n)
+        Add(t1, t2) -> show(t1) + " + (" + show(t2) + ")"
+        Lam(x, t') -> "λ" + x + "." + show(t')
+        App(t1, t2) -> "(" + show(t1) + ")" + show(t2)
+        Fail -> "Fail"
+        Amb(t1, t2) -> "Amb (" + show(t1) + ") (" + show(t2) + ")"
+    }
+}
+
+fun show(v : value) : string
+{
+    match(v)
+    {
+        Wrong -> "<wrong>"
+        Num(n) -> show(n)
+        Fun(_) -> "<function>"
+    }
+}
+
+val handle_amb_maybe = handler
+{
+    return x -> Just(x)
+    fail() -> Nothing
+    flip() -> resume(True)
+}
+
+fun test_maybe(t : term) : div string
+{
+    match(handle_amb_maybe(fun() {interp(t, [])}))
+    {
+        Just(v) -> "Just(" + show(v) + ")"
+        Nothing -> "Nothing"
+    }
+}
+
+val handle_amb_list = handler
 {
     return x -> [x]
     fail() -> []
     flip() -> resume(False) + resume(True)
 }
 
-fun test(t : term) : div string
+fun test_list(t : term) : div string
 {
-    show-list(handle_list(fun() {interp(t, [])}), show)
+    show-list(handle_amb_list {interp(t, [])}, show)
 }
 
-val handle_random = handler
+val handle_amb_random = handler
 {
     return x -> x
     fail() -> Wrong
     flip() -> resume(random-bool())
 }
 
-fun test'(t : term) : <div, ndet> string
+fun test_random(t : term) : <div, ndet> string
 {
-    show(handle_random(fun() {interp(t, [])}))
+    show(handle_amb_random {interp(t, [])})
 }
 
 val term0 : term =
     App(Lam("x", Add(Var("x"), Var("x"))),
         Add(Const(10), Const(11)))
 
-val term1 : term =
-    App(Lam("x", Add(Var("x"), Var("x"))),
-        Add(Amb(Const(1), Const(10)), Amb(Const(100), Const(1000))))
+val failamb_term0 : term =
+    Add(Const(42), Fail)
+
+val failamb_term1 : term =
+    Amb(Const(100), Const(1234567890))
+
+val testTerms : list<term> =
+    [term0, failamb_term0, failamb_term1]
 
 fun main()
 {
-    term0.test.println
+    foreach([test_maybe, test_list, test_random], fun(test)
+    {
+        foreach(testTerms, fun(term)
+        {
+            println("Interpreting " + show(term))
+            term.test.println
+        })
+    })
 }

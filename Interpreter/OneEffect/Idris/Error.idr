@@ -17,11 +17,6 @@ data Value = Wrong
 Env : Type
 Env = List (Name, Value)
 
-Show Value where
-    show Wrong = "<wrong>"
-    show (Num n) = show n
-    show (Fun f) = "<function>"
-
 lookupEnv : Name -> Env -> Eff Value [EXCEPTION String]
 lookupEnv x [] = raise $ "Variable " ++ x ++ " not bound!"
 lookupEnv x ((y, v) :: env) = if x == y then pure v else lookupEnv x env
@@ -48,6 +43,18 @@ interp (App t1 t2) env = do
     x <- interp t2 env
     apply f x
 
+Show Term where
+    show (Var x) = x
+    show (Const n) = show n
+    show (Add t1 t2) = show t1 ++ " + (" ++ show t2 ++ ")"
+    show (Lam x t) = "λ" ++ x ++ "." ++ show t
+    show (App t1 t2) = "(" ++ show t1 ++ ")" ++ show t2
+
+Show Value where
+    show Wrong = "<wrong>"
+    show (Num n) = show n
+    show (Fun f) = "<function>"
+
 test : Term -> String
 test t =
     case run (interp t []) of
@@ -57,11 +64,15 @@ test t =
 term0 : Term
 term0 = App (Lam "x" (Add (Var "x") (Var "x")))
             (Add (Const 10) (Const 11))
-            
-term1 : Term
-term1 = Var "OBOŻETOJESTZBOŻE"
+
+error_term0 : Term
+error_term0 = Var "OBOŻETOJESTZBOŻE"
+
+testTerms : List Term
+testTerms = [term0, error_term0]
 
 main : IO ()
 main = do
-    putStrLn $ test term0
-    putStrLn $ test term1
+    for_ testTerms $ \t => do
+        putStrLn $ "Interpreting " ++ show t
+        putStrLn $ test t

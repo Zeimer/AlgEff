@@ -16,16 +16,6 @@ rectype value
     Fun(f : value -> div value)
 }
 
-fun show(v : value) : string
-{
-    match(v)
-    {
-        Wrong -> "<wrong>"
-        Num(n) -> show(n)
-        Fun(_) -> "<function>"
-    }
-}
-
 alias env = list<(name, value)>
 
 fun lookupEnv(x : name, env : env) : value
@@ -67,16 +57,39 @@ fun interp(t : term, env : env) : div value
     }
 }
 
-val term0 : term =
-    App(Lam("x", Add(Var("x"), Var("x"))),
-        Add(Const(10), Const(11)))
+fun show(t : term) : string
+{
+    match(t)
+    {
+        Var(x) -> x
+        Const(n) -> show(n)
+        Add(t1, t2) -> show(t1) + " + (" + show(t2) + ")"
+        Lam(x, t') -> "λ" + x + "." + show(t')
+        App(t1, t2) -> "(" + show(t1) + ")" + show(t2)
+    }
+}
+
+fun show(v : value) : string
+{
+    match(v)
+    {
+        Wrong -> "<wrong>"
+        Num(n) -> show(n)
+        Fun(_) -> "<function>"
+    }
+}
 
 fun test(t : term) : div string
 {
     interp(t, []).show
 }
 
+val term0 : term =
+    App(Lam("x", Add(Var("x"), Var("x"))),
+        Add(Const(10), Const(11)))
+
 fun main()
 {
+    println("Interpreting " + show(term0))
     term0.test.println
 }

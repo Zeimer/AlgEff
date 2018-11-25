@@ -13,11 +13,6 @@ data Value = Wrong
            | Num Int
            | Fun (Value -> Writer String Value)
 
-instance Show Value where
-    show Wrong = "<wrong>"
-    show (Num n) = show n
-    show (Fun _) = "<function>"
-
 type Env = [(Name, Value)]
 
 lookupEnv :: Name -> Env -> Writer String Value
@@ -49,13 +44,23 @@ apply :: Value -> Value -> Writer String Value
 apply (Fun f) x = f x
 apply _ _ = pure Wrong
 
-showwriter :: Writer String Value -> String
-showwriter w =
-    case runWriter w of
-        (v, w) -> "log: " ++ w ++ "\nresult: " ++ show v
+instance Show Term where
+    show (Var x) = x
+    show (Const n) = show n
+    show (Add t1 t2) = show t1 ++ " + (" ++ show t2 ++ ")"
+    show (Lam x t) = "λ" ++ x ++ "." ++ show t
+    show (App t1 t2) = "(" ++ show t1 ++ ")" ++ show t2
+    show (Out t) = "Out (" ++ show t ++ ")"
+    
+instance Show Value where
+    show Wrong = "<wrong>"
+    show (Num n) = show n
+    show (Fun _) = "<function>"
 
 test :: Term -> String
-test t = showwriter $ interp t []
+test t =
+    case runWriter (interp t []) of
+        (v, w) -> "log: " ++ w ++ "\nresult: " ++ show v
 
 term0 :: Term
 term0 = App (Lam "x" (Add (Var "x") (Var "x")))
@@ -64,6 +69,11 @@ term0 = App (Lam "x" (Add (Var "x") (Var "x")))
 out_term0 :: Term
 out_term0 = Out (Add (Out (Const 42)) (Out (Const 23456789)))
 
+testTerms :: [Term]
+testTerms = [term0, out_term0]
+
 main :: IO ()
 main = do
-    forM_ [term0, out_term0] (putStrLn . test)
+    forM_ testTerms $ \t -> do
+        putStrLn $ "Interpreting " ++ show t
+        putStrLn $ test t

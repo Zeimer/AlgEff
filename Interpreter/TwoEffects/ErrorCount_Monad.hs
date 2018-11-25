@@ -30,7 +30,7 @@ interp (Const n) _ = pure $ pure (Num n)
 interp (Add t1 t2) env = do
     s1 <- interp t1 env
     s2 <- interp t2 env
-    add <$> s1 <*> s2
+    pure $ runState add <$> s1 <*> s2
 interp (Lam x t) env = pure $ pure $ Fun (\a -> interp t ((x, a) : env))
 interp (App t1 t2) env = do
     f <- interp t1 env
@@ -67,13 +67,3 @@ term1 = Add Count (Add Count Count)
 
 term2 :: Term
 term2 = Add (Add Count Count) Count
-
-{-
-test :: Term -> String
-test t =
-    case runState (interp t []) 0 of
-        Left msg -> msg
-        Right (Wrong, s) -> "<wrong> (in " ++ show s ++ " steps)"
-        Right (Num n, s) -> show n ++ " (in " ++ show s ++ " steps)"
-        Right (Fun f, s) -> "<function> (in " ++ show s ++ " steps)"
--}
