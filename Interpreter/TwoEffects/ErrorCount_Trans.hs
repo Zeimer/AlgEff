@@ -61,13 +61,3 @@ term1 = Add Count (Add Count Count)
 
 term2 :: Term
 term2 = Add (Add Count Count) Count
-
-{-
-test :: Term -> String
-test t =
-    case runState (interp t []) 0 of
-        Left msg -> msg
-        Right (Wrong, s) -> "<wrong> (in " ++ show s ++ " steps)"
-        Right (Num n, s) -> show n ++ " (in " ++ show s ++ " steps)"
-        Right (Fun f, s) -> "<function> (in " ++ show s ++ " steps)"
--}

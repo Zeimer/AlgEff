@@ -2,6 +2,8 @@ import Control.Monad.State
 
 type Name = String
 
+-- We augment the syntax with Count, which should mean the number of times
+-- addition or application was performed during reduction.
 data Term = Var Name
           | Const Int
           | Add Term Term
@@ -9,6 +11,7 @@ data Term = Var Name
           | App Term Term
           | Count
 
+-- Because of this our representation of functions also changes.
 data Value = Wrong
            | Num Int
            | Fun (Value -> State Int Value)
@@ -19,9 +22,11 @@ lookupEnv :: Name -> Env -> State Int Value
 lookupEnv x [] = pure Wrong
 lookupEnv x ((y, v) : env) = if x == y then pure v else lookupEnv x env
 
+-- Increase the count by one.
 tick :: State Int ()
 tick = modify (+1)
 
+-- The types of add and apply change because we need to maintain the counter.
 add :: Value -> Value -> State Int Value
 add (Num n) (Num m) = tick >> (pure $ Num (n + m))
 add _ _ = pure Wrong
@@ -30,6 +35,9 @@ apply :: Value -> Value -> State Int Value
 apply (Fun f) x = tick >> f x
 apply _ _ = pure Wrong
 
+-- Because the return type is now State Int Value, the body of interp has to
+-- be written in monadic style.
+-- We interpret Count by just returning the counter we hold in our state.
 interp :: Term -> Env -> State Int Value
 interp (Var x) env = lookupEnv x env
 interp (Const n) _ = pure (Num n)
@@ -46,6 +54,7 @@ interp Count _ = do
     n <- get
     pure $ Num n
 
+-- Count is shown simply as "Count"
 instance Show Term where
     show (Var x) = x
     show (Const n) = show n
@@ -59,6 +68,9 @@ instance Show Value where
     show (Num n) = show n
     show (Fun f) = "<function>"
 
+-- To run our interpreter, we have to call runState with the second argument
+-- being the initial state. When printing the value, we also show the operation
+-- count.
 test :: Term -> String
 test t =
     case runState (interp t []) 0 of
@@ -68,6 +80,7 @@ term0 :: Term
 term0 = App (Lam "x" (Add (Var "x") (Var "x")))
             (Add (Const 10) (Const 11))
 
+-- 
 count_term0 :: Term
 count_term0 = Add Count (Add Count Count)
 

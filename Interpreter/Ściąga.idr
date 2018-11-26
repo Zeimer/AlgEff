@@ -1,5 +1,3 @@
--- Console I/O
-
 import Data.Vect
 
 import Effects

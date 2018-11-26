@@ -93,6 +93,7 @@ fun interp(t : term, env : env) : all value
         Amb(t1, t2) -> {tick(); if (flip()) then interp(t1, env) else interp(t2, env)}
         Out(t') ->
         {
+            tick()
             val v = interp(t', env)
             v.show.log
             v
@@ -174,18 +175,50 @@ val handle_log_list = handler(l)
 
 fun test_maybe_string(t : term) : pure string
 {
-    match(handle_err {handle_amb_maybe {handle_state(0) {handle_log_string("") {interp(t, [])}}}})
+    match(handle_err {handle_state(0) {handle_log_string("") {handle_amb_maybe {interp(t, [])}}}})
     {
         Left(msg) -> msg
-        Right(Nothing) -> "Nothing"
-        Right(Just(((v, log), s))) ->
+        Right(((mv, log), s)) ->
         {
+            val v = match(mv)
+            {
+                Nothing -> "Nothing"
+                Just(v) -> show(v)
+            }
+
             "log:" +
             log + "\n" +
+            "result: " + v + " (in " + show(s) + " steps)"
+        }
+    }
+}
+
+fun test_random_list(t : term) : <pure, ndet> string
+{
+    match(handle_err {handle_state(0) {handle_log_list([]) {handle_amb_random {interp(t, [])}}}})
+    {
+        Left(msg) -> msg
+        Right(((v, log), s)) ->
+        {
+            "log: " + show-list(log.reverse, show) + "\n" +
             "result: " + show(v) + " (in " + show(s) + " steps)"
         }
     }
 }
+
+/*
+fun test_list_list(t : term) : <pure, ndet> string
+{
+    match(handle_err {handle_state(0) {handle_log_list([]) {handle_amb_random {interp(t, [])}}}})
+    {
+        Left(msg) -> msg
+        Right(l) -> foreach(l, fun(vlog, s)
+        {
+            "log: " + show-list(vlog.snd.reverse, show) + "\n" +
+            "result: " + vlog.fst.show + " (in " + show(s) + " steps)"
+        })
+    }
+}*/
 
 val term0 : term =
     App(Lam("x", Add(Var("x"), Var("x"))),
@@ -209,12 +242,19 @@ val failamb_term1 : term =
 val out_term0 : term =
     Out(Add(Out(Const(42)), Out(Const(23456789))))
 
+val all_term0 : term =
+    Amb(Fail,
+        Amb(Var("OBOŻETOJESTZBOŻE"),
+        Out(Add(Out(Count),
+            Out(Add(Out(Count),
+                Out(Count)))))))
+
 val testTerms : list<term> =
-    [term0, count_term0, count_term1, error_term0, failamb_term0, failamb_term1, out_term0]
+    [term0, count_term0, count_term1, error_term0, failamb_term0, failamb_term1, out_term0, all_term0]
 
 fun main()
 {
-    foreach([test_maybe_string], fun(test)
+    foreach([test_maybe_string, test_random_list], fun(test)
     {
         foreach(testTerms, fun(term)
         {
