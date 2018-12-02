@@ -10,6 +10,7 @@ data Term = Var Name
           | Lam Name Term
           | App Term Term
 
+-- For errors we use the EXCEPTION String effect.
 data Value = Wrong
            | Num Int
            | Fun (Value -> Eff Value [EXCEPTION String])
@@ -17,6 +18,7 @@ data Value = Wrong
 Env : Type
 Env = List (Name, Value)
 
+-- This effect allows us the use the function raise.
 lookupEnv : Name -> Env -> Eff Value [EXCEPTION String]
 lookupEnv x [] = raise $ "Variable " ++ x ++ " not bound!"
 lookupEnv x ((y, v) :: env) = if x == y then pure v else lookupEnv x env
@@ -36,7 +38,6 @@ interp (Add t1 t2) env = do
     n <- interp t1 env
     m <- interp t2 env
     add n m
-
 interp (Lam x t) env = pure $ Fun (\a => interp t ((x, a) :: env))
 interp (App t1 t2) env = do
     f <- interp t1 env
@@ -55,6 +56,9 @@ Show Value where
     show (Num n) = show n
     show (Fun f) = "<function>"
 
+-- We handle our effect by calling run. We don't need to do any initialization
+-- like we had for the STATE effect. The context in which to run the computation
+-- is inferred to be Either String String, because of the case expression.
 test : Term -> String
 test t =
     case run (interp t []) of

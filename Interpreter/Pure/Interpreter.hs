@@ -17,12 +17,12 @@ data Value = Wrong
 -- The environment binds names to values.
 type Env = [(Name, Value)]
 
--- Look a name up in the environment.
+-- Look up a a name in the environment.
 lookupEnv :: Name -> Env -> Value
 lookupEnv x [] = Wrong
 lookupEnv x ((y, v) : env) = if x == y then v else lookupEnv x env
 
--- Helper function for addition. We can only add numbers, anything else is wrong.
+-- Helper function for addition. We can only add numbers, anything else is Wrong.
 add :: Value -> Value -> Value
 add (Num n) (Num m) = Num (n + m)
 add _ _ = Wrong
@@ -63,7 +63,7 @@ instance Show Value where
 test :: Term -> String
 test t = show $ interp t []
 
--- A test term. It should reduce to 42.
+-- A test term. Its interpretation should be 42.
 term0 :: Term
 term0 = App (Lam "x" (Add (Var "x") (Var "x")))
             (Add (Const 10) (Const 11))

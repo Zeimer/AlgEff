@@ -12,6 +12,8 @@ data Term = Var Name
           | Fail
           | Amb Term Term
 
+-- For nondeterminism we use the SELECT effect. It will allow us to
+-- nondeterministically select a value from a list.
 data Value = Wrong
            | Num Int
            | Fun (Value -> Eff Value [SELECT])
@@ -19,6 +21,8 @@ data Value = Wrong
 Env : Type
 Env = List (Name, Value)
 
+-- Failure in lookup, add and apply is represented by selecting from the empty
+-- list.
 lookupEnv : Name -> Env -> Eff Value [SELECT]
 lookupEnv x [] = select []
 lookupEnv x ((y, v) :: env) = if x == y then pure v else lookupEnv x env
@@ -31,6 +35,9 @@ apply : Value -> Value -> Eff Value [SELECT]
 apply (Fun f) x = f x
 apply _ _ = select []
 
+-- In the Amb case We can't just append like we did in Haskell, because our
+-- SELECT effect is more abstract than Haskell's list monad. Instead we select
+-- either True on False and then continue intepreting the appropriate branch.
 interp : Term -> Env -> Eff Value [SELECT]
 interp (Var x) env = lookupEnv x env
 interp (Const n) _ = pure (Num n)
@@ -45,9 +52,8 @@ interp (App t1 t2) env = do
     apply f x
 interp Fail _ = select []
 interp (Amb t1 t2) env = do
-    v1 <- interp t1 env
-    v2 <- interp t2 env
-    select [v1, v2]
+    b <- select [True, False]
+    if b then interp t1 env else interp t2 env
 
 Show Term where
     show (Var x) = x
@@ -63,6 +69,11 @@ Show Value where
     show (Num n) = show n
     show (Fun f) = "<function>"
 
+-- Because SELECT is more abstract than Haskell's list monad, we can handle it
+-- in more ways. The function 'the' has type (a : Type) -> a -> a, so it is a
+-- cleverly named identity function for disambiguating types. We use it so that
+-- our computation is interpreted as Maybe (which means "take the first answer")
+-- or as a list (which means "take all the answers").
 test_Maybe : Term -> String
 test_Maybe t = show $ the (Maybe _) $ run (interp t [])
 

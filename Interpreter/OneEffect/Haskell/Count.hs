@@ -2,7 +2,7 @@ import Control.Monad.State
 
 type Name = String
 
--- We augment the syntax with Count, which should mean the number of times
+-- We extend the syntax with Count, which should mean the number of times
 -- addition or application was performed during reduction.
 data Term = Var Name
           | Const Int
@@ -80,7 +80,7 @@ term0 :: Term
 term0 = App (Lam "x" (Add (Var "x") (Var "x")))
             (Add (Const 10) (Const 11))
 
--- 
+-- More tests terms.
 count_term0 :: Term
 count_term0 = Add Count (Add Count Count)
 
@@ -90,6 +90,8 @@ count_term1 = Add (Add Count Count) Count
 testTerms :: [Term]
 testTerms = [term0, count_term0, count_term1]
 
+-- We iterate over the test terms and display each one and the result of
+-- evaluating it.
 main :: IO ()
 main = do
     forM_ testTerms $ \t -> do

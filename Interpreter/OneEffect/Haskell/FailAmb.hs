@@ -2,6 +2,8 @@ import Control.Monad
 
 type Name = String
 
+-- We extend the syntax with Fail, which should mean 0-ary choice, and
+-- Amb, which should mean a binary choice.
 data Term = Var Name
           | Const Int
           | Add Term Term
@@ -10,16 +12,19 @@ data Term = Var Name
           | Fail
           | Amb Term Term
 
+-- Functions now return lists of values.
 data Value = Wrong
            | Num Int
            | Fun (Value -> [Value])
 
 type Env = [(Name, Value)]
 
+-- We treat lack of a binding for a variable the same as we should treat Fail.
 lookupEnv :: Name -> Env -> [Value]
 lookupEnv x [] = []
 lookupEnv x ((y, v) : env) = if x == y then pure v else lookupEnv x env
 
+-- Similarly we treat argument mismatch for add and apply like Fail.
 add :: Value -> Value -> [Value]
 add (Num n) (Num m) = pure $ Num (n + m)
 add _ _ = []
@@ -43,6 +48,7 @@ interp (App t1 t2) env = do
 interp Fail _ = []
 interp (Amb t1 t2) env = interp t1 env ++ interp t2 env
 
+-- We display Fail and Amb verbatim.
 instance Show Term where
     show (Var x) = x
     show (Const n) = show n
@@ -57,6 +63,8 @@ instance Show Value where
     show (Num n) = show n
     show (Fun f) = "<function>"
 
+-- To get a string representation of the result, just show the whole
+-- list of results.
 test :: Term -> String
 test t = show (interp t [])
 
@@ -64,6 +72,7 @@ term0 :: Term
 term0 = App (Lam "x" (Add (Var "x") (Var "x")))
             (Add (Const 10) (Const 11))
 
+-- More test terms.
 failamb_term0 :: Term
 failamb_term0 = Add (Const 42) Fail
 

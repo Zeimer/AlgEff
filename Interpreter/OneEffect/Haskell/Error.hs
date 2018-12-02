@@ -2,22 +2,27 @@ import Control.Monad
 
 type Name = String
 
+-- This time the syntax doesn't change.
 data Term = Var Name
           | Const Int
           | Add Term Term
           | Lam Name Term
           | App Term Term
 
+-- But the values do, since we want to do proper error handling instead of
+-- just using Wrong as the result.
 data Value = Wrong
            | Num Int
            | Fun (Value -> Either String Value)
 
 type Env = [(Name, Value)]
 
+-- We "raise" an error using left when a variable is not in the environment.
 lookupEnv :: Name -> Env -> Either String Value
 lookupEnv x [] = Left $ "Variable " ++ x ++ " not bound!"
 lookupEnv x ((y, v) : env) = if x == y then pure v else lookupEnv x env
 
+-- Similarly add and apply raise an error when given wrong arguments.
 add :: Value -> Value -> Either String Value
 add (Num n) (Num m) = pure $ Num (n + m)
 add _ _ = Left $ "Can't add!"
@@ -51,6 +56,8 @@ instance Show Value where
     show (Num n) = show n
     show (Fun f) = "<function>"
 
+-- To get a string representation of the result, we run our interpreter and
+-- see whether it produces an error or a value.
 test :: Term -> String
 test t =
     case interp t [] of
@@ -61,6 +68,7 @@ term0 :: Term
 term0 = App (Lam "x" (Add (Var "x") (Var "x")))
             (Add (Const 10) (Const 11))
 
+-- More test terms.
 error_term0 :: Term
 error_term0 = Var "OBOŻETOJESTZBOŻE"
 

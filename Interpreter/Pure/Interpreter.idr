@@ -3,7 +3,7 @@
 Name : Type
 Name = String
 
--- Terms and vales are represented as in Haskell.
+-- Terms and values are represented as in Haskell.
 data Term = Var Name
           | Const Int
           | Add Term Term
@@ -23,7 +23,7 @@ lookupEnv : Name -> Env -> Value
 lookupEnv x [] = Wrong
 lookupEnv x ((y, v) :: env) = if x == y then v else lookupEnv x env
 
--- In Idris, the order of definitions matter, so we have to place helper
+-- In Idris, the order of definitions matters, so we have to place helper
 -- functions before functions which use them.
 add : Value -> Value -> Value
 add (Num n) (Num m) = Num (n + m)
@@ -42,7 +42,7 @@ interp (Lam x t) env = Fun (\a => interp t ((x, a) :: env))
 interp (App t1 t2) env = apply (interp t1 env) (interp t2 env)
 
 -- Typeclass instances don't need the "instance" keyword.
--- So much saved typing!
+-- So much typing saved!
 Show Term where
     show (Var x) = x
     show (Const n) = show n
