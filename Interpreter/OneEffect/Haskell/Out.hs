@@ -46,7 +46,7 @@ interp (App t1 t2) env = do
     apply f x
 interp (Out t) env = do
     v <- interp t env
-    writer ((), [v])
+    tell [v]
     pure v
 
 -- We diplay Out verbatim.

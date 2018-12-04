@@ -35,9 +35,9 @@ apply : Value -> Value -> Eff Value [SELECT]
 apply (Fun f) x = f x
 apply _ _ = select []
 
--- In the Amb case We can't just append like we did in Haskell, because our
+-- In the Amb case we can't just append like we did in Haskell, because our
 -- SELECT effect is more abstract than Haskell's list monad. Instead we select
--- either True on False and then continue intepreting the appropriate branch.
+-- either True or False and then continue intepreting the appropriate branch.
 interp : Term -> Env -> Eff Value [SELECT]
 interp (Var x) env = lookupEnv x env
 interp (Const n) _ = pure (Num n)
