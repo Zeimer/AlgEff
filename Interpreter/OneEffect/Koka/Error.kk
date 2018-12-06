@@ -9,6 +9,9 @@ type term
     App(t1 : term, t2 : term)
 }
 
+// Our error effect has one operation, err, of type string -> a. Note that err
+// is not polymorphic in a, which means that err can return a result of any
+// type whatsoever. How it will achieve this is a matter of its handler.
 effect err
 {
     fun err(msg : string) : a
@@ -23,6 +26,7 @@ rectype value
 
 alias env = list<(name, value)>
 
+// In particular, the err operation can act as a value for our calculus.
 fun lookupEnv(x : name, env : env) : <err> value
 {
     match(env)
@@ -84,12 +88,16 @@ fun show(v : value) : string
     }
 }
 
+// We handle errors by translating them to the type either<string, value>.
+// Pure values become Rights and errors become Lefts.
 val handle_err = handler
 {
     return v -> Right(v)
     err(msg) -> Left(msg)
 }
 
+// After calling our handler, we have to convert both values and errors
+// messages into strings anyway.
 fun test(t : term) : div string
 {
     match(handle_err {interp(t, [])})

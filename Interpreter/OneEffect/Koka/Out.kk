@@ -10,6 +10,7 @@ type term
     Out(t : term)
 }
 
+// Our log effect will be polymorphic in the type of messages.
 effect log<a>
 {
     fun log(msg : a) : ()
@@ -19,7 +20,7 @@ rectype value
 {
     Wrong
     Num(n : int)
-    Fun(f : value -> <div, log<string>> value)
+    Fun(f : value -> <div, log<value>> value)
 }
 
 alias env = list<(name, value)>
@@ -42,7 +43,7 @@ fun add(v1, v2 : value) : value
     }
 }
 
-fun apply(v1, v2 : value) : <div, log<string>> value
+fun apply(v1, v2 : value) : <div, log<value>> value
 {
     match(v1)
     {
@@ -51,7 +52,7 @@ fun apply(v1, v2 : value) : <div, log<string>> value
     }
 }
 
-fun interp(t : term, env : env) : <div, log<string>> value
+fun interp(t : term, env : env) : <div, log<value>> value
 {
     match(t)
     {
@@ -63,7 +64,7 @@ fun interp(t : term, env : env) : <div, log<string>> value
         Out(t') ->
         {
             val v = interp(t', env)
-            v.show.log
+            v.log
             v
         }
     }
@@ -92,10 +93,13 @@ fun show(v : value) : string
     }
 }
 
+// We handle our log effect by transforming the logged values to strings and
+// appending them to one big string log that is passed in the second argument
+// of resume.
 val handle_log_string = handler(s)
 {
     return v -> (v, s)
-    log(msg : string) -> resume((), s + "\n" + msg)
+    log(v : value) -> resume((), s + "\n" + v.show)
 }
 
 fun test_string(t : term) : div string
@@ -106,10 +110,12 @@ fun test_string(t : term) : div string
     }
 }
 
+// We can also handle logging by appending the logged values to a list
+// without converting them to strings first.
 val handle_log_list = handler(l)
 {
     return v -> (v, l)
-    log(msg : string) -> resume((), Cons(msg, l))
+    log(v : value) -> resume((), Cons(v, l))
 }
 
 fun test_list(t : term) : div string
@@ -118,6 +124,22 @@ fun test_list(t : term) : div string
     {
         (v, l) -> "log: " + show-list(l.reverse, show) + "\nvalue: " + show(v)
     }
+}
+
+// But the huge win lies in the ability to turn logging off entirely if we want
+// to. In Haskell we have to accumulate the log and then eventually throw it
+// away, which is wasteful (even if it's lazy - or even especially then, because
+// thunks are not free). Here, we can throw the log away on the go without wasting
+// any space.
+val handle_log_nolog = handler
+{
+    return v -> v
+    log(_ : value) -> resume(())
+}
+
+fun test_nolog(t : term) : div string
+{
+    show(handle_log_nolog {interp(t, [])})
 }
 
 val term0 : term =
@@ -132,12 +154,22 @@ val testTerms : list<term> =
 
 fun main()
 {
-    foreach([test_string, test_list], fun(test)
+    println("Testing the string handler")
+    foreach(testTerms, fun(term)
     {
-        foreach(testTerms, fun(term)
-        {
-            println("Interpreting " + show(term))
-            term.test.println
-        })
+        println("Interpreting " + show(term))
+        term.test_string.println
+    })
+    println("Testing the list handler")
+    foreach(testTerms, fun(term)
+    {
+        println("Interpreting " + show(term))
+        term.test_list.println
+    })
+    println("Testing the nolog handler")
+    foreach(testTerms, fun(term)
+    {
+        println("Interpreting " + show(term))
+        term.test_nolog.println
     })
 }
