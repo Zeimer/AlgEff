@@ -12,6 +12,8 @@ data Term = Var Name
           | App Term Term
           | Count
 
+-- The type of our computations is no less verbose than in Haskell, but at least
+-- the order of effects doesn't matter that much.
 data Value = Wrong
            | Num Int
            | Fun (Value -> Eff Value [STATE Int, EXCEPTION String])
@@ -19,31 +21,20 @@ data Value = Wrong
 Env : Type
 Env = List (Name, Value)
 
-Show Value where
-    show Wrong = "<wrong>"
-    show (Num n) = show n
-    show (Fun f) = "<function>"
-
 lookupEnv : Name -> Env -> Eff Value [STATE Int, EXCEPTION String]
 lookupEnv x [] = raise $ "Variable " ++ x ++ " not bound!"
 lookupEnv x ((y, v) :: env) = if x == y then pure v else lookupEnv x env
 
 tick : Eff () [STATE Int]
-tick = do
-    n <- get
-    put $ n + 1
-    
+tick = update (+1)
+
 add : Value -> Value -> Eff Value [STATE Int, EXCEPTION String]
-add (Num n) (Num m) = do
-    tick
-    pure $ Num (n + m)
+add (Num n) (Num m) = tick *> pure (Num (n + m))
 add _ _ = raise "Can't add!"
 
 apply : Value -> Value -> Eff Value [STATE Int, EXCEPTION String]
-apply (Fun f) x = do
-    tick
-    f x
-apply _ _ = raise "Can't apply"
+apply (Fun f) x = tick *> f x
+apply _ _ = raise "Can't apply!"
 
 interp : Term -> Env -> Eff Value [STATE Int, EXCEPTION String]
 interp (Var x) env = lookupEnv x env
@@ -61,18 +52,18 @@ interp Count _ = do
     n <- get
     pure $ Num n
 
-term0 : Term
-term0 = App (Lam "x" (Add (Var "x") (Var "x")))
-            (Add (Const 10) (Const 11))
+Show Term where
+    show (Var x) = x
+    show (Const n) = show n
+    show (Add t1 t2) = show t1 ++ " + (" ++ show t2 ++ ")"
+    show (Lam x t) = "λ" ++ x ++ "." ++ show t
+    show (App t1 t2) = "(" ++ show t1 ++ ")" ++ show t2
+    show (Count) = "Count"
 
-term1 : Term
-term1 = Add Count (Add Count Count)
-
-term2 : Term
-term2 = Add (Add Count Count) Count
-            
-term3 : Term
-term3 = Var "O BOŻE TO JEST ZBOŻE"
+Show Value where
+    show Wrong = "<wrong>"
+    show (Num n) = show n
+    show (Fun f) = "<function>"
 
 test : Term -> String
 test t =
@@ -80,9 +71,24 @@ test t =
         Left msg => msg
         Right v => show v
 
+term0 : Term
+term0 = App (Lam "x" (Add (Var "x") (Var "x")))
+            (Add (Const 10) (Const 11))
+
+count_term0 : Term
+count_term0 = Add Count (Add Count Count)
+
+count_term1 : Term
+count_term1 = Add (Add Count Count) Count
+            
+error_term0 : Term
+error_term0 = Var "O BOŻE TO JEST ZBOŻE"
+
+testTerms : List Term
+testTerms = [term0, count_term0, count_term1, error_term0]
+
 main : IO ()
 main = do
-    putStrLn $ "term0: " ++ test term0
-    putStrLn $ "term1: " ++ test term1
-    putStrLn $ "term2: " ++ test term2
-    putStrLn $ "term3: " ++ test term3
+    for_ testTerms $ \t => do
+        putStrLn $ "Interpreting " ++ show t
+        putStrLn $ test t
