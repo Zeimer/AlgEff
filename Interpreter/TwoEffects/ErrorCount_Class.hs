@@ -1,9 +1,10 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ConstraintKinds #-}
 
-import Control.Monad.Trans.Except
 import Control.Monad.State
+import Control.Monad.Trans.Except
 import Control.Monad.Error.Class
+import Control.Monad.Identity
 
 type Name = String
 
@@ -105,8 +106,17 @@ instance Show (Value m) where
 test :: Term -> String
 test t =
     case runState (runExceptT (interp t [])) 0 of
-        (Left msg, _) -> msg
+        (Left msg, s) -> msg ++ " (in " ++ show s ++ " steps)"
         (Right v, s) -> show v ++ " (in " ++ show s ++ " steps)"
+
+-- We can also run our effects ina different order, so that erroneous terms
+-- don't get the steps counted when they are interpreted. Doing the same the
+-- transformers way would make us copy-paste and hand-adjust the whole file.
+test' :: Term -> String
+test' t =
+    case runIdentity $ runExceptT $ runStateT (interp t []) 0 of
+        Left msg -> msg
+        Right (v, s) -> show v ++ " (in " ++ show s ++ " steps)"
 
 term0 :: Term
 term0 = App (Lam "x" (Add (Var "x") (Var "x")))
@@ -117,7 +127,7 @@ count_term0 = Add Count (Add Count Count)
 
 count_term1 :: Term
 count_term1 = Add (Add Count Count) Count
-            
+
 error_term0 :: Term
 error_term0 = Var "O BOŻE TO JEST ZBOŻE"
 
@@ -126,6 +136,11 @@ testTerms = [term0, count_term0, count_term1, error_term0]
 
 main :: IO ()
 main = do
+    putStrLn "First handling errors, then state."
     forM_ testTerms $ \t -> do
         putStrLn $ "Interpreting " ++ show t
         putStrLn $ test t
+    putStrLn "First handling state, then errors."
+    forM_ testTerms $ \t -> do
+        putStrLn $ "Interpreting " ++ show t
+        putStrLn $ test' t

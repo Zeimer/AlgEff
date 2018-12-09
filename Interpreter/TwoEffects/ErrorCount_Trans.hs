@@ -19,24 +19,27 @@ data Value = Wrong
 
 type Env = [(Name, Value)]
 
--- The type of our computations is somewhat verbose, but using the error
+-- The type of our computations is somewhat verbose, but using error
 -- and state functionality is rather easy.
 lookupEnv :: Name -> Env -> ExceptT String (State Int) Value
 lookupEnv x [] = throwE $ "Variable " ++ x ++ " not bound!"
 lookupEnv x ((y, v) : env) = if x == y then pure v else lookupEnv x env
 
-tick :: ExceptT String (State Int) ()
+-- We can make the type shorter using type aliases.
+type Eff a = ExceptT String (State Int) a
+
+tick :: Eff ()
 tick = modify (+1)
 
-add :: Value -> Value -> ExceptT String (State Int) Value
+add :: Value -> Value -> Eff Value
 add (Num n) (Num m) = tick >> (pure $ Num (n + m))
 add _ _ = throwE $ "Can't add!"
 
-apply :: Value -> Value -> ExceptT String (State Int) Value
+apply :: Value -> Value -> Eff Value
 apply (Fun f) x = tick >> f x
 apply _ _ = throwE $ "Can't apply!"
 
-interp :: Term -> Env -> ExceptT String (State Int) Value
+interp :: Term -> Env -> Eff Value
 interp (Var x) env = lookupEnv x env
 interp (Const n) _ = pure (Num n)
 interp (Add t1 t2) env = do
