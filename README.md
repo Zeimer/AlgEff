@@ -8,3 +8,10 @@ This repo contains slides and code from my seminar talk. For the best experience
   * Interpreter/TwoEffects - interpreters for LC with both errors and operation count. First see ErrorCount_Monad.hs to see why monads don't compose too well. Then see ErrorCount_Trans.hs for a solution using monad transformers. The Idris and Koka versions show that algebraic effects compose better than monads or transformers.
   * Interpreter/AllEffects - interpreters for LC having all four effects mentioned.
   * Free - a free monad example in Haskell (the package free is required for this) and a showcase for how much easier the same is in Koka.
+
+## TODO
+
+* All effect interpreter using monads.
+* All effect interpreter using classes.
+* All effect interpreter in Idris.
+* Implement a MonadNondet class.

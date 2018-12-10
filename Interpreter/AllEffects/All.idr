@@ -1,6 +1,7 @@
 import Effects
-import Effect.Exception
 import Effect.State
+import Effect.Exception
+import Effect.Select
 
 Name : Type
 Name = String
@@ -11,12 +12,12 @@ data Term = Var Name
           | Lam Name Term
           | App Term Term
           | Count
+          | Fail
+          | Amb Term Term
 
--- The type of our computations is no less verbose than in Haskell, but at least
--- the order of effects doesn't matter that much.
 data Value = Wrong
            | Num Int
-           | Fun (Value -> Eff Value [STATE Int, EXCEPTION String])
+           | Fun (Value -> Eff Value [STATE Int, EXCEPTION String, SELECT])
 
 Env : Type
 Env = List (Name, Value)
@@ -28,15 +29,15 @@ lookupEnv x ((y, v) :: env) = if x == y then pure v else lookupEnv x env
 tick : Eff () [STATE Int]
 tick = update (+1)
 
-add : Value -> Value -> Eff Value [STATE Int, EXCEPTION String]
+add : Value -> Value -> Eff Value [STATE Int, EXCEPTION String, SELECT]
 add (Num n) (Num m) = tick *> pure (Num (n + m))
 add _ _ = raise "Can't add!"
 
-apply : Value -> Value -> Eff Value [STATE Int, EXCEPTION String]
+apply : Value -> Value -> Eff Value [STATE Int, EXCEPTION String, SELECT]
 apply (Fun f) x = tick *> f x
 apply _ _ = raise "Can't apply!"
 
-interp : Term -> Env -> Eff Value [STATE Int, EXCEPTION String]
+interp : Term -> Env -> Eff Value [STATE Int, EXCEPTION String, SELECT]
 interp (Var x) env = lookupEnv x env
 interp (Const n) _ = pure (Num n)
 interp (Add t1 t2) env = do
@@ -51,6 +52,10 @@ interp (App t1 t2) env = do
 interp Count _ = do
     n <- get
     pure $ Num n
+interp Fail _ = select []
+interp (Amb t1 t2) env = do
+    b <- select [True, False]
+    if b then interp t1 env else interp t2 env
 
 Show Term where
     show (Var x) = x
@@ -66,10 +71,12 @@ Show Value where
     show (Fun f) = "<function>"
 
 test : Term -> String
-test t =
-    case the (Either String _) $ run (interp t []) of
+test t = ?test
+{-
+    case the (Either String (List _)) $ run (interp t []) of
         Left msg => msg
         Right v => show v
+-}
 
 term0 : Term
 term0 = App (Lam "x" (Add (Var "x") (Var "x")))
@@ -84,8 +91,14 @@ count_term1 = Add (Add Count Count) Count
 error_term0 : Term
 error_term0 = Var "O BOŻE TO JEST ZBOŻE"
 
+failamb_term0 : Term
+failamb_term0 = Add (Const 42) Fail
+
+failamb_term1 : Term
+failamb_term1 = Amb (Const 100) (Const 1234567890)
+
 testTerms : List Term
-testTerms = [term0, count_term0, count_term1, error_term0]
+testTerms = [term0, count_term0, count_term1, error_term0, failamb_term0, failamb_term1]
 
 main : IO ()
 main = do

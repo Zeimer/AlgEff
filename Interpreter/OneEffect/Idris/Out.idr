@@ -2,7 +2,7 @@ import Effects
 
 import Control.Monad.Writer
 
--- Idris has no built-in LOG effect, co we have to make one ourselves.
+-- Idris has no built-in LOG effect, so we have to make one ourselves.
 -- First, we have to know what an Effect is. We can check this using
 -- the command :doc Effect or :printdef Effect 
 --

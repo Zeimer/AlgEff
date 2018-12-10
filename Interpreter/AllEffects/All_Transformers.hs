@@ -6,44 +6,46 @@ import Control.Monad.State
 import Control.Monad.Error.Class
 import Control.Monad.Writer
 import Control.Monad.Identity
+import Control.Monad.Trans.List
 
 type Name = String
 
--- This time we want to have all the effects at once.
 data Term = Var Name
           | Const Int
           | Add Term Term
           | Lam Name Term
           | App Term Term
           | Count
---          | Fail
---          | Amb Term Term
+          | Fail
+          | Amb Term Term
           | Out Term
 
-data Value m = Wrong
+type Stack s w e r = StateT s (WriterT w (ListT (Either e))) r
+
+data Value = Wrong
            | Num Int
-           | Fun (Value m -> m (Value m))
+           | Fun (Value -> Stack Int [Value] String Value)
 
-type Env m = [(Name, Value m)]
+type Computation r = Stack Int [Value] String r
 
-lookupEnv :: MonadError String m => Name -> Env m -> m (Value m)
+type Env = [(Name, Value)]
+
+lookupEnv :: Name -> Env -> Computation Value
 lookupEnv x [] = throwError $ "Variable " ++ x ++ " not bound!"
 lookupEnv x ((y, v) : env) = if x == y then pure v else lookupEnv x env
 
-tick :: MonadState Int m => m ()
+tick :: Computation ()
 tick = modify (+1)
     
-add :: (MonadError String m, MonadState Int m) => Value m -> Value m -> m (Value m)
+add :: Value -> Value -> Computation Value
 add (Num n) (Num m) = tick >> (pure $ Num (n + m))
 add _ _ = throwError $ "Can't add!"
 
-apply :: (MonadError String m, MonadState Int m) => Value m -> Value m -> m (Value m)
+apply :: Value -> Value -> Computation Value
 apply (Fun f) x = tick >> f x
 apply f _ = throwError $ show f ++ " should be a function!"
 
-interp ::
-    (MonadError String m, MonadState Int m, MonadWriter String m) =>
-        Term -> Env m -> m (Value m)
+interp :: Term -> Env -> Computation Value
 interp (Var x) env = lookupEnv x env
 interp (Const n) _ = pure (Num n)
 interp (Add t1 t2) env = do
@@ -58,11 +60,11 @@ interp (App t1 t2) env = do
 interp Count _ = do
     n <- get
     pure $ Num n
---interp Fail _ = []
---interp (Amb t1 t2) env = interp t1 env ++ interp t2 env
+interp Fail _ = mzero -- lift $ lift []
+interp (Amb t1 t2) env = mplus (interp t1 env) (interp t2 env)
 interp (Out t) env = do
     v <- interp t env
-    tell $ show v ++ "; "
+    tell [v]
     pure v
 
 instance Show Term where
@@ -72,18 +74,23 @@ instance Show Term where
     show (Lam x t) = "λ" ++ x ++ "." ++ show t
     show (App t1 t2) = "(" ++ show t1 ++ ")" ++ show t2
     show (Count) = "Count"
+    show Fail = "Fail"
+    show (Amb t1 t2) = "Amb (" ++ show t1 ++ ") (" ++ show t2 ++ ")"
+    show (Out t) = "Out (" ++ show t ++ ")"
 
-instance Show (Value m) where
+instance Show Value where
     show Wrong = "<wrong>"
     show (Num n) = show n
     show (Fun f) = "<function>"
 
 test :: Term -> String
 test t =
-    case runIdentity $ runExceptT $ runWriterT $ runStateT (interp t []) 0 of
+    case runListT $ runWriterT $ runStateT (interp t []) 0 of
         Left msg -> msg
-        Right ((v, s), l) ->
-            "log: " ++ l ++ "\nresult: " ++ show v ++ " (in " ++ show s ++ " steps)"
+        Right l -> unlines $
+            flip map l $ \((val, state), log) ->
+                "log: " ++ show log ++ "\n" ++
+                "result: " ++ show val ++ " (in " ++ show state ++ " steps)"
 
 term0 :: Term
 term0 = App (Lam "x" (Add (Var "x") (Var "x")))
@@ -98,20 +105,26 @@ count_term0 = Add Count (Add Count Count)
 count_term1 :: Term
 count_term1 = Add (Add Count Count) Count
 
--- Sadly, Haskell has no built-in nondeterminism monad, so we include neither
--- failure nor ambiguity.
-{-
 failamb_term0 :: Term
 failamb_term0 = Add (Const 42) Fail
 
 failamb_term1 :: Term
-failamb_term1 = Amb (Const 100) (Const 1234567890)
--}
+failamb_term1 = Amb (Const 100) (Const 12345)
 
 out_term0 :: Term
-out_term0 = Out (Add (Out (Const 42)) (Out (Const 23456789)))
+out_term0 = Out (Add (Out (Const 42)) (Out (Const 54321)))
+
+term1 :: Term
+term1 =
+    Amb
+        (Add
+            (Amb count_term0 out_term0)
+            (Amb failamb_term0 out_term0))
+        (Add term0 count_term1)
 
 main :: IO ()
 main = do
-    forM_ [term0, count_term0, count_term1, out_term0]
-          (putStrLn . test)
+    forM_ [term0, count_term0, count_term1, failamb_term0, failamb_term1, out_term0, term1]
+        $ \t -> do
+            putStrLn $ replicate 50 '-'
+            putStrLn $ test t
