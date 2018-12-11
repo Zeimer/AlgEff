@@ -12,6 +12,5 @@ This repo contains slides and code from my seminar talk. For the best experience
 ## TODO
 
 * All effect interpreter using monads.
-* All effect interpreter using classes.
 * All effect interpreter in Idris.
 * Implement a MonadNondet class.

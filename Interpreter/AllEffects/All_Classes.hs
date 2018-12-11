@@ -6,6 +6,7 @@ import Control.Monad.State
 import Control.Monad.Error.Class
 import Control.Monad.Writer
 import Control.Monad.Identity
+import Control.Monad.Trans.List
 
 type Name = String
 
@@ -70,6 +71,7 @@ instance Show Term where
     show (Lam x t) = "λ" ++ x ++ "." ++ show t
     show (App t1 t2) = "(" ++ show t1 ++ ")" ++ show t2
     show (Count) = "Count"
+    show (Out t) = "Out (" ++ show t ++ ")"
 
 instance Show (Value m) where
     show Wrong = "<wrong>"
@@ -113,3 +115,37 @@ main :: IO ()
 main = do
     forM_ [term0, count_term0, count_term1, out_term0]
           (putStrLn . test)
+
+class Monad m => MonadNondet m where
+    fail' :: m a
+    choice :: m Bool
+
+instance MonadNondet [] where
+    fail' = []
+    choice = [True, False]
+
+{-
+instance MonadNondet m => MonadNondet (StateT s m) where
+    fail' = lift fail'
+    choice = lift choice
+
+instance MonadNondet m => MonadNondet (ExceptT e m) where
+    fail' = lift fail'
+    choice = lift choice
+
+instance Monad m => MonadNondet (ListT m) where
+    fail' = ListT $ pure []
+    choice = ListT $ pure [True, False]
+
+instance (MonadNondet m, Monoid w) => MonadNondet (WriterT w m) where
+    fail' = lift fail'
+    choice = lift choice
+-}
+
+
+select :: MonadNondet m => [a] -> m a
+select [] = fail'
+select (x:xs) = do
+    b <- choice
+    if b then pure x else select xs
+

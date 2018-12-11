@@ -1,6 +1,7 @@
 import Effects
 
 import Control.Monad.Writer
+import Control.Monad.Identity
 
 -- Idris has no built-in LOG effect, so we have to make one ourselves.
 -- First, we have to know what an Effect is. We can check this using
@@ -82,7 +83,7 @@ lookupEnv : Name -> Env -> Eff Value [LOG Value]
 lookupEnv x [] = pure Wrong
 lookupEnv x ((y, v) :: env) = if x == y then pure v else lookupEnv x env
 
-add : Value -> Value -> Eff Value [LOG Value]
+add : Value -> Value -> Eff Value []
 add (Num n) (Num m) = pure $ Num (n + m)
 add _ _ = pure Wrong
 
@@ -121,14 +122,24 @@ Show Value where
     show (Num n) = show n
     show (Fun _) = "<function>"
 
+{-
 Handler (Log a) m where
     handle xs (Tell x) k = k () (x :: xs)
+-}
 
--- TODO
+Handler (Log a) (Writer a) where
+    handle xs (Tell x) k = do
+        tell x
+        k () xs
+
 test : Term -> String
 test t = ?a
-    
---        (v, w) -> "log: " ++ show w ++ "\nresult: " ++ show v
+{-
+    case runIdentity $ runWriterT $ the (Writer String _) $ run (interp t []) of
+        (value, log) =>
+            "log: " ++ log ++ "\n" ++
+            "result: " ++ show value
+-}
 
 term0 : Term
 term0 = App (Lam "x" (Add (Var "x") (Var "x")))
