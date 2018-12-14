@@ -14,7 +14,7 @@ import Control.Monad.Identity
 --
 -- The second type is the input resource, because in Idris effects are tied to
 -- resources. For example, the resource tied to the STATE effect is... well,
--- the state itself.
+-- the state itself (represented using a value of type S).
 --
 -- The third thing, (x -> Type), is a family of types parametrized by x, i.e.
 -- if we give it something of type x, it gives us back a type. It represents
@@ -27,11 +27,11 @@ data Log : Type -> Effect where
 
 -- Thus, the declaration
 --
--- data Log : Effect
+-- data Log : Type -> Effect
 --
 -- means in fact
 --
--- Log : (x : Type) -> Type -> (x -> Type) -> Type
+-- Log : Type -> (x : Type) -> Type -> (x -> Type) -> Type
 --
 -- We want the resource of our Log effect to be a list of messages, where the
 -- messages may be of any type a, not just String. We want the output resource
@@ -47,17 +47,41 @@ LOG t = MkEff (List t) (Log t)
 
 -- The Log data type of above has to be promoted to a 'concrete' effect (as the
 -- documentation under :doc EFFECT says). Thus in our code we will write our effect
--- as LOG (List a).
+-- as [LOG a].
 
 tell : a -> Eff () [LOG a]
 tell x = call (Tell x)
 
 -- We have to write some boilerplate to promote the Tell operation to Eff,
--- a monad which is an environment in which effects are run.
+-- an applicative (in the sense of applicative functors) environment in which
+-- effects are run.
 --
--- Eff () [LOG (List a)] means that our tell function returns () (just as the
--- Tell operation) and has the effect LOG (List a), which is the promoted
+-- Eff () [LOG a] means that our tell function returns () (just as the
+-- Tell operation) and has the effect LOG a, which is the promoted
 -- version of Log.
+
+implementation Handler (Log a) (WriterT (List a) Identity) where
+    handle rest (Tell msg) k = do
+        tell [msg]
+        k () rest
+
+-- To be able to use our effect, we need to write a handler for it. A handler
+-- is a function that can run the effectful computation in some computational
+-- context. For example, the state effect can be used in any context, because
+-- a cell of state of type s can be simulated using the type s -> (a, s). This
+-- is how the state monad is implemented in Haskell.
+--
+-- In our case, logging can't be used in any context. Why is that? Even though
+-- logging messages of type w can be simulated using the type (a, [w]) (and
+-- this is how the Writer monad is implemented in Haskell), running it in the
+-- Identity context (Identity is, as the name suggests, an identity functor/monad)
+-- would make us unable to access the log we produced.
+--
+-- Our handler will therefore only handle logging in the Writer monad. For
+-- technical reasons we need to write WriterT (List a) Identity instead of
+-- the simpler Writer (List a). This is because "Implementation arguments must
+-- be type or data constructors" and Writer a is just a synonym for
+-- WriterT a Identity, which makes Idris unhappy.
 
 Name : Type
 Name = String
@@ -79,7 +103,7 @@ data Value = Wrong
 Env : Type
 Env = List (Name, Value)
 
-lookupEnv : Name -> Env -> Eff Value [LOG Value]
+lookupEnv : Name -> Env -> Eff Value []
 lookupEnv x [] = pure Wrong
 lookupEnv x ((y, v) :: env) = if x == y then pure v else lookupEnv x env
 
@@ -122,24 +146,12 @@ Show Value where
     show (Num n) = show n
     show (Fun _) = "<function>"
 
-{-
-Handler (Log a) m where
-    handle xs (Tell x) k = k () (x :: xs)
--}
-
-Handler (Log a) (Writer a) where
-    handle xs (Tell x) k = do
-        tell x
-        k () xs
-
 test : Term -> String
-test t = ?a
-{-
-    case runIdentity $ runWriterT $ the (Writer String _) $ run (interp t []) of
+test t =
+    case runIdentity $ runWriterT $ the (Writer (List Value) _) $ run (interp t []) of
         (value, log) =>
-            "log: " ++ log ++ "\n" ++
+            "log: " ++ show log ++ "\n" ++
             "result: " ++ show value
--}
 
 term0 : Term
 term0 = App (Lam "x" (Add (Var "x") (Var "x")))

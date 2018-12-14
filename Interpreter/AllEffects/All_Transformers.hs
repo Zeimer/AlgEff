@@ -38,7 +38,7 @@ tick :: Computation ()
 tick = modify (+1)
     
 add :: Value -> Value -> Computation Value
-add (Num n) (Num m) = tick >> (pure $ Num (n + m))
+add (Num n) (Num m) = tick >> pure (Num (n + m))
 add _ _ = throwError $ "Can't add!"
 
 apply :: Value -> Value -> Computation Value
@@ -122,9 +122,13 @@ term1 =
             (Amb failamb_term0 out_term0))
         (Add term0 count_term1)
 
+testTerms :: [Term]
+testTerms =
+    [term0, count_term0, count_term1, error_term0, failamb_term0, failamb_term1, out_term0, term1]
+
 main :: IO ()
 main = do
-    forM_ [term0, count_term0, count_term1, failamb_term0, failamb_term1, out_term0, term1]
-        $ \t -> do
-            putStrLn $ replicate 50 '-'
-            putStrLn $ test t
+    forM_ testTerms $ \t -> do
+        putStrLn $ replicate 50 '-'
+        putStrLn $ "Interpreting " ++ show t
+        putStrLn $ test t
