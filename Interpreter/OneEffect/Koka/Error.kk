@@ -9,12 +9,12 @@ type term
     App(t1 : term, t2 : term)
 }
 
-// Our error effect has one operation, err, of type string -> a. Note that err
-// is not polymorphic in a, which means that err can return a result of any
-// type whatsoever. How it will achieve this is a matter of its handler.
+// Our error effect has one operation, raise, of type string -> a. Note that
+// raise is not polymorphic in a, which means that err can return a result of
+// any type whatsoever. How it will achieve this is a matter of its handler.
 effect err
 {
-    fun err(msg : string) : a
+    fun raise(msg : string) : a
 }
 
 rectype value
@@ -26,22 +26,22 @@ rectype value
 
 alias env = list<(name, value)>
 
-// In particular, the err operation can act as a value for our calculus.
-fun lookupEnv(x : name, env : env) : <err> value
+// In particular, the raise operation can act as a value for our calculus.
+fun lookupEnv(x : name, env : env) : err value
 {
     match(env)
     {
-        Nil -> err("Variable " + x + " not bound!")
+        Nil -> raise("Variable " + x + " not bound!")
         Cons((y, v), env') -> if (x == y) then v else lookupEnv(x, env')
     }
 }
 
-fun add(v1, v2 : value) : <err> value
+fun add(v1, v2 : value) : err value
 {
     match((v1, v2))
     {
         (Num(n), Num(m)) -> Num(n + m)
-        (_, _) -> err("Can't add!")
+        (_, _) -> raise("Can't add!")
     }
 }
 
@@ -50,7 +50,7 @@ fun apply(v1, v2 : value) : <div, err> value
     match(v1)
     {
         Fun(f) -> f(v2)
-        _ -> err("Can't apply!")
+        _ -> raise("Can't apply!")
     }
 }
 
@@ -93,10 +93,10 @@ fun show(v : value) : string
 val handle_err = handler
 {
     return v -> Right(v)
-    err(msg) -> Left(msg)
+    raise(msg) -> Left(msg)
 }
 
-// After calling our handler, we have to convert both values and errors
+// After calling our handler, we have to convert both values and error
 // messages into strings anyway.
 fun test(t : term) : div string
 {
@@ -121,7 +121,9 @@ fun main()
 {
     foreach(testTerms, fun(t)
     {
+        replicate('-', 50).string.println
         println("Interpreting " + show(t))
         t.test.println
+        replicate('-', 50).string.println
     })
 }

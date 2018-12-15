@@ -52,6 +52,7 @@ fun apply(v1, v2 : value) : <div, log<value>> value
     }
 }
 
+// We use our log effect by just calling log on the message.
 fun interp(t : term, env : env) : <div, log<value>> value
 {
     match(t)
@@ -152,24 +153,24 @@ val out_term0 : term =
 val testTerms : list<term> =
     [term0, out_term0]
 
+val tests : list<(term -> <div> string, string)> =
+    [(test_string, "string"), (test_list, "list"), (test_nolog, "nolog")]
+
 fun main()
 {
-    println("Testing the string handler")
-    foreach(testTerms, fun(term)
+    foreach(tests, fun(p)
     {
-        println("Interpreting " + show(term))
-        term.test_string.println
-    })
-    println("Testing the list handler")
-    foreach(testTerms, fun(term)
-    {
-        println("Interpreting " + show(term))
-        term.test_list.println
-    })
-    println("Testing the nolog handler")
-    foreach(testTerms, fun(term)
-    {
-        println("Interpreting " + show(term))
-        term.test_nolog.println
+        val test = p.fst
+        val name = p.snd
+
+        replicate('=', 50).string.println
+        println("Testing the " + name + " handler")
+        replicate('=', 50).string.println
+        foreach(testTerms, fun(term)
+        {
+            println("Interpreting " + show(term))
+            term.test.println
+            replicate('-', 50).string.println
+        })
     })
 }

@@ -18,9 +18,9 @@ data Value = Wrong
 
 type Env = [(Name, Value)]
 
-lookupEnv :: Name -> Env -> State Int Value
-lookupEnv x [] = pure Wrong
-lookupEnv x ((y, v) : env) = if x == y then pure v else lookupEnv x env
+lookupEnv :: Name -> Env -> Value
+lookupEnv x [] = Wrong
+lookupEnv x ((y, v) : env) = if x == y then v else lookupEnv x env
 
 -- Increase the count by one.
 tick :: State Int ()
@@ -39,7 +39,7 @@ apply _ _ = pure Wrong
 -- be written in monadic style.
 -- We interpret Count by just returning the counter we hold in our state.
 interp :: Term -> Env -> State Int Value
-interp (Var x) env = lookupEnv x env
+interp (Var x) env = pure $ lookupEnv x env
 interp (Const n) _ = pure (Num n)
 interp (Add t1 t2) env = do
     n1 <- interp t1 env
@@ -95,5 +95,7 @@ testTerms = [term0, count_term0, count_term1]
 main :: IO ()
 main = do
     forM_ testTerms $ \t -> do
+        putStrLn $ replicate 50 '-'
         putStrLn $ "Interpreting " ++ show t
         putStrLn $ test t
+        putStrLn $ replicate 50 '-'

@@ -22,7 +22,6 @@ implementation Handler (Log a) (WriterT (List a) Identity) where
 
 data M s w e r = Err e | Nil | Cons (s -> (r, List w, s)) (M s w e r)
 
-
 implementation Handler (Log a) (M s (List a) e) where
     handle rest (Tell msg) k = do
         case k () rest of

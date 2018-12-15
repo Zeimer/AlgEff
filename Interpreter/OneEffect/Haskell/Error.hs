@@ -78,5 +78,7 @@ testTerms = [term0, error_term0]
 main :: IO ()
 main = do
     forM_ testTerms $ \t -> do
+        putStrLn $ replicate 50 '-'
         putStrLn $ "Interpreting " ++ show t
         putStrLn $ test t
+        putStrLn $ replicate 50 '-'

@@ -1,7 +1,9 @@
 -- To use the Effects library, we first have to import Effects and then import
--- every single ffect from Effect.
+-- every single effect from Effect.
 import Effects
 import Effect.State
+
+import Control.Monad.State
 
 Name : Type
 Name = String
@@ -23,15 +25,14 @@ data Value = Wrong
 Env : Type
 Env = List (Name, Value)
 
--- In Idris, for programming with effects we can use monadic style.
-lookupEnv : Name -> Env -> Eff Value [STATE Int]
-lookupEnv x [] = pure Wrong
-lookupEnv x ((y, v) :: env) = if x == y then pure v else lookupEnv x env
+lookupEnv : Name -> Env -> Value
+lookupEnv x [] = Wrong
+lookupEnv x ((y, v) :: env) = if x == y then v else lookupEnv x env
 
 tick : Eff () [STATE Int]
 tick = update (+1)
 
--- Idris doesn't have both >> and *> like Haskell, but only *>
+-- Note that Idris doesn't have both >> and *> like Haskell, but only *>
 add : Value -> Value -> Eff Value [STATE Int]
 add (Num n) (Num m) = tick *> pure (Num (n + m))
 add _ _ = pure Wrong
@@ -40,7 +41,7 @@ apply : Value -> Value -> Eff Value [STATE Int]
 apply (Fun f) x = tick *> f x
 apply _ _ = pure Wrong
 
--- While programming with effects we can also uso do notation. When this is too
+-- While programming with effects we can use do notation. When this is too
 -- much boilerplate, we can also use the ! notation, like
 --
 -- pure $ Num !get
@@ -51,7 +52,7 @@ apply _ _ = pure Wrong
 -- n <- get
 -- pure $ Num n
 interp : Term -> Env -> Eff Value [STATE Int]
-interp (Var x) env = lookupEnv x env
+interp (Var x) env = pure $ lookupEnv x env
 interp (Const n) _ = pure (Num n)
 interp (Add t1 t2) env = do
     n1 <- interp t1 env
@@ -83,6 +84,7 @@ Show Value where
 -- runPure would automatically initialize the initial state to 0, but
 -- we can also do that by manually giving it the default argument env
 -- in curly braces.
+-- TODO: figure out how to get the final state.
 test : Term -> String
 test t = show $ runPure (interp t []) {env = [0]}
 
@@ -101,8 +103,16 @@ testTerms = [term0, count_term0, count_term1]
 
 -- Haskell's forM_ is called for_ in Idris and its class constraint is
 -- the more general Applicative instead of Monad.
+-- To actually run this in the REPL, we have to also load the Effect
+-- library using the command
+--
+-- idris -p effects Count.idr
+--
+-- This is so because the Effect library is not a part of the standard library.
 main : IO ()
 main = do
     for_ testTerms $ \t => do
+        putStrLn $ cast $ replicate 50 '-'
         putStrLn $ "Interpreting " ++ show t
         putStrLn $ test t
+        putStrLn $ cast $ replicate 50 '-'

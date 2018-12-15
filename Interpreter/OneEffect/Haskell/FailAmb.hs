@@ -2,7 +2,7 @@ import Control.Monad
 
 type Name = String
 
--- We extend the syntax with Fail, which should mean 0-ary choice, and
+-- We extend the syntax with Fail, which should mean a nullary choice, and
 -- Amb, which should mean a binary choice.
 data Term = Var Name
           | Const Int
@@ -19,7 +19,7 @@ data Value = Wrong
 
 type Env = [(Name, Value)]
 
--- We treat lack of a binding for a variable the same as we should treat Fail.
+-- We treat lack of a binding for a variable the same as we will treat Fail.
 lookupEnv :: Name -> Env -> [Value]
 lookupEnv x [] = []
 lookupEnv x ((y, v) : env) = if x == y then pure v else lookupEnv x env
@@ -33,6 +33,8 @@ apply :: Value -> Value -> [Value]
 apply (Fun f) x = f x
 apply _ _ = []
 
+-- We interpret Fail by returning no result at all and Amb by returning all
+-- results stemming from the possible choices.
 interp :: Term -> Env -> [Value]
 interp (Var x) env = lookupEnv x env
 interp (Const n) _ = pure (Num n)
@@ -77,7 +79,7 @@ failamb_term0 :: Term
 failamb_term0 = Add (Const 42) Fail
 
 failamb_term1 :: Term
-failamb_term1 = Amb (Const 100) (Const 1234567890)
+failamb_term1 = Amb (Const 100) (Const 12345)
 
 testTerms :: [Term]
 testTerms = [term0, failamb_term0, failamb_term1]
@@ -85,5 +87,7 @@ testTerms = [term0, failamb_term0, failamb_term1]
 main :: IO ()
 main = do
     forM_ testTerms $ \t -> do
+        putStrLn $ replicate 50 '-'
         putStrLn $ "Interpreting " ++ show t
         putStrLn $ test t
+        putStrLn $ replicate 50 '-'

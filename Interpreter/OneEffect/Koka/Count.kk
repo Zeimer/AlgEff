@@ -11,8 +11,8 @@ type term
 }
 
 // We declare effects with the effect keyword. An effect has a name and it can
-// have type parameters. Each effect is associated to a set of operations that
-// have names and are of some (function type).
+// have type parameters. Each effect is associated with a set of operations that
+// have names and are of some type.
 //
 // Here we declare an effect called "state" that is polymorphic in the type of
 // the thing it holds. It has two operations, get of type () -> s and put of
@@ -73,7 +73,7 @@ fun apply(v1, v2 : value) : <div, state<int>> value
     }
 }
 
-// We interpret Count using get(). Not how much easier this is than in Haskell
+// We interpret Count using get(). Note how much easier this is than in Haskell
 // and Idris.
 fun interp(t : term, env : env) : <div, state<int>> value
 {
@@ -116,7 +116,8 @@ fun show(v : value) : string
 // effect that we want to handle. In each case we can do something with
 // the arguments of the operation and then abort our computation, resume
 // it using the keyword "resume" or even resume it multiple times. We can
-// also transform the result of the computation by matching on return.
+// also transform the result of the computation by matching the special
+// "return" clause.
 //
 // Here we handle our state effect by passing the state in the second argument
 // of resume. When we're done computing, we return the result together with its
@@ -133,14 +134,14 @@ val handle_state = handler(s)
 
 // We can use our handler with the syntax
 //
-// handler_name(args) { expression to be handle }
+// handler_name(args) { expression to be handled }
 //
 // Here we want our initial state to be 0. After handling the interpreter,
-// we get a pair of (result, final state) which we match so that we can
-// transform it to string. Note that the return type is div string, because
-// we handle the state effect, but we didn't handle the div effect (and in
-// fact I think we can't handle it - nontermination is a somewhat abstract
-// and built-in effect that has no operations).
+// we get a pair (result, final state) which we match to transform it into
+// a string. Note that the return type is div string, because we handle the
+// state effect, but we didn't handle the div effect. In fact I think we
+// can't handle it, because nontermination is a somewhat abstract and built-in
+// effect that has no operations.
 fun test(t : term) : div string
 {
     match(handle_state(0) {interp(t, [])})
@@ -168,12 +169,15 @@ val testTerms : list<term> =
 //
 // which means that foreach takes a list of a and any effectful computation
 // that transforms a to () and produces a computation returning () that has
-// the same effects.
+// the same effects. This must have been way easier to implement than writing
+// a functor instance with fmap for each functor separately!
 fun main()
 {
     foreach(testTerms, fun(t)
     {
+        replicate('-', 50).string.println
         println("Interpreting " + show(t))
         t.test.println
+        replicate('-', 50).string.println
     })
 }

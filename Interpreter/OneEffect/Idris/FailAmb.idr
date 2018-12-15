@@ -35,9 +35,10 @@ apply : Value -> Value -> Eff Value [SELECT]
 apply (Fun f) x = f x
 apply _ _ = select []
 
--- In the Amb case we can't just append like we did in Haskell, because our
--- SELECT effect is more abstract than Haskell's list monad. Instead we select
--- either True or False and then continue intepreting the appropriate branch.
+-- In the Amb case we can't just concatenate like we did in Haskell, because
+-- our SELECT effect is more abstract than Haskell's list monad. Instead we
+-- select either True or False and then continue intepreting the appropriate
+-- branch.
 interp : Term -> Env -> Eff Value [SELECT]
 interp (Var x) env = lookupEnv x env
 interp (Const n) _ = pure (Num n)
@@ -88,7 +89,7 @@ failamb_term0 : Term
 failamb_term0 = Add (Const 42) Fail
 
 failamb_term1 : Term
-failamb_term1 = Amb (Const 100) (Const 1234567890)
+failamb_term1 = Amb (Const 100) (Const 12345)
 
 testTerms : List Term
 testTerms = [term0, failamb_term0, failamb_term1]
@@ -97,9 +98,13 @@ main : IO ()
 main = do
     putStrLn "Testing the Maybe handler"
     for_ testTerms $ \t => do
+        putStrLn $ cast $ replicate 50 '-'
         putStrLn $ "Interpreting " ++ show t
         putStrLn $ test_Maybe t
+        putStrLn $ cast $ replicate 50 '-'
     putStrLn "Testing the List handler"
     for_ testTerms $ \t => do
+        putStrLn $ cast $ replicate 50 '-'
         putStrLn $ "Interpreting " ++ show t
         putStrLn $ test_List t
+        putStrLn $ cast $ replicate 50 '-'

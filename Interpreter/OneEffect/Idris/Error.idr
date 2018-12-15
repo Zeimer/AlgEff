@@ -1,6 +1,5 @@
 import Effects
 import Effect.Exception
-import Effect.State
 
 Name : Type
 Name = String
@@ -79,5 +78,7 @@ testTerms = [term0, error_term0]
 main : IO ()
 main = do
     for_ testTerms $ \t => do
+        putStrLn $ cast $ replicate 50 '-'
         putStrLn $ "Interpreting " ++ show t
         putStrLn $ test t
+        putStrLn $ cast $ replicate 50 '-'

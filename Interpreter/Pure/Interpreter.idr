@@ -24,7 +24,8 @@ lookupEnv x [] = Wrong
 lookupEnv x ((y, v) :: env) = if x == y then v else lookupEnv x env
 
 -- In Idris, the order of definitions matters, so we have to place helper
--- functions before functions which use them.
+-- functions before functions which use them (we did the same in Haskell,
+-- but we didn't need to).
 add : Value -> Value -> Value
 add (Num n) (Num m) = Num (n + m)
 add _ _ = Wrong
@@ -34,6 +35,7 @@ apply (Fun f) x = f x
 apply _ _ = Wrong
 
 -- The interpreter is as in Haskell, but we use :: for Cons instead of :
+-- and => instead of -> in anonymous functions.
 interp : Term -> Env -> Value
 interp (Var x) env = lookupEnv x env
 interp (Const n) _ = Num n

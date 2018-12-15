@@ -31,7 +31,7 @@ rectype value
 
 alias env = list<(name, value)>
 
-fun lookupEnv(x : name, env : env) : <amb> value
+fun lookupEnv(x : name, env : env) : amb value
 {
     match(env)
     {
@@ -40,7 +40,7 @@ fun lookupEnv(x : name, env : env) : <amb> value
     }
 }
 
-fun add(v1, v2 : value) : <amb> value
+fun add(v1, v2 : value) : amb value
 {
     match((v1, v2))
     {
@@ -120,7 +120,8 @@ fun test_maybe(t : term) : div string
 
 // To get all possible results, we handle fail() with the empty list and flip()
 // by resuming first with True (which amounts to choosing the first argument of
-// Amb) and then with False (which amounts to choosing the second argument).
+// Amb) and then with False (which amounts to choosing the second argument) and
+// finally concatenating the results.
 val handle_amb_list = handler
 {
     return x -> [x]
@@ -155,30 +156,34 @@ val failamb_term0 : term =
     Add(Const(42), Fail)
 
 val failamb_term1 : term =
-    Amb(Const(100), Const(1234567890))
+    Amb(Const(100), Const(12345))
 
 val testTerms : list<term> =
     [term0, failamb_term0, failamb_term1]
 
+// Functions are first class, so we can hold them inside a list. In fact, Koka
+// is a purely functional language. Its Javascript-like syntax is only meant
+// to be a trap for luring naïve imperative programmers into purely functional
+// programming.
+val tests : list<(term -> <div, ndet> string, string)> =
+    [(test_maybe, "maybe"), (test_list, "list"), (test_random, "random")]
+
 // Thanks to its type, foreach can be easily nested.
 fun main()
 {
-    println("Testing the maybe handler")
-    foreach(testTerms, fun(term)
+    foreach(tests, fun(p)
     {
-        println("Interpreting " + show(term))
-        term.test_maybe.println
-    })
-    println("Testing the list handler")
-    foreach(testTerms, fun(term)
-    {
-        println("Interpreting " + show(term))
-        term.test_list.println
-    })
-    println("Testing the random handler")
-    foreach(testTerms, fun(term)
-    {
-        println("Interpreting " + show(term))
-        term.test_random.println
+        val test = p.fst
+        val name = p.snd
+
+        replicate('=', 50).string.println
+        println("Testing the " + name + " handler")
+        replicate('=', 50).string.println
+        foreach(testTerms, fun(term)
+        {
+            println("Interpreting " + show(term))
+            term.test.println
+            replicate('-', 50).string.println
+        })
     })
 }

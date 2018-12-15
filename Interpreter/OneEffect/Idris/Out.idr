@@ -3,9 +3,10 @@ import Effects
 import Control.Monad.Writer
 import Control.Monad.Identity
 
--- Idris has no built-in LOG effect, so we have to make one ourselves.
--- First, we have to know what an Effect is. We can check this using
--- the command :doc Effect or :printdef Effect 
+-- Idris has no built-in LOG effect (or rather it has, but a more complicated
+-- than we need), so we have to make one ourselves. First, we have to know what
+-- an Effect is. We can check this using the command :doc Effect or
+-- :printdef Effect 
 --
 -- Effect : Type
 -- Effect = (x : Type) -> Type -> (x -> Type) -> Type
@@ -14,13 +15,13 @@ import Control.Monad.Identity
 --
 -- The second type is the input resource, because in Idris effects are tied to
 -- resources. For example, the resource tied to the STATE effect is... well,
--- the state itself (represented using a value of type S).
+-- the state itself (represented as a value of appropriate type).
 --
 -- The third thing, (x -> Type), is a family of types parametrized by x, i.e.
 -- if we give it something of type x, it gives us back a type. It represents
 -- a computation that is run on the input resource and that gives us back the
 -- output resource. For the STATE effect, for example, we could change the type
--- of state we have using the put operation.
+-- of state by using the put operation.
 
 data Log : Type -> Effect where
     Tell : a -> Log a () (List a) (\_ => List a)
@@ -38,14 +39,14 @@ data Log : Type -> Effect where
 -- to be the same, so we put here (\_ => List a), a type family that always
 -- returns List a.
 --
--- We want only one operation, Tell, which takes a message of type a, returns () and
--- has the Log effect, whose input and output resource is List a, the list of messages
--- that we will append to.
+-- We want only one operation, Tell, which takes a message of type a, returns ()
+-- and whose input and output resource is List a, the list of messages that we will
+-- append to.
 
 LOG : Type -> EFFECT
 LOG t = MkEff (List t) (Log t)
 
--- The Log data type of above has to be promoted to a 'concrete' effect (as the
+-- The above Log data type has to be promoted to a 'concrete' effect (as the
 -- documentation under :doc EFFECT says). Thus in our code we will write our effect
 -- as [LOG a].
 
@@ -78,9 +79,9 @@ implementation Handler (Log a) (WriterT (List a) Identity) where
 -- would make us unable to access the log we produced.
 --
 -- Our handler will therefore only handle logging in the Writer monad. For
--- technical reasons we need to write WriterT (List a) Identity instead of
--- the simpler Writer (List a). This is because "Implementation arguments must
--- be type or data constructors" and Writer a is just a synonym for
+-- technical reasons we need to write WriterT (List a) Identity instead of the
+-- simpler Writer (List a). This is because "Implementation arguments must be
+-- type or data constructors" and Writer a is just a synonym for
 -- WriterT a Identity, which makes Idris unhappy.
 
 Name : Type
@@ -103,13 +104,13 @@ data Value = Wrong
 Env : Type
 Env = List (Name, Value)
 
-lookupEnv : Name -> Env -> Eff Value []
-lookupEnv x [] = pure Wrong
-lookupEnv x ((y, v) :: env) = if x == y then pure v else lookupEnv x env
+lookupEnv : Name -> Env -> Value
+lookupEnv x [] = Wrong
+lookupEnv x ((y, v) :: env) = if x == y then v else lookupEnv x env
 
-add : Value -> Value -> Eff Value []
-add (Num n) (Num m) = pure $ Num (n + m)
-add _ _ = pure Wrong
+add : Value -> Value -> Value
+add (Num n) (Num m) = Num (n + m)
+add _ _ = Wrong
 
 apply : Value -> Value -> Eff Value [LOG Value]
 apply (Fun f) x = f x
@@ -117,12 +118,12 @@ apply _ _ = pure Wrong
 
 -- We interpret Out t using the function tell.
 interp : Term -> Env -> Eff Value [LOG Value]
-interp (Var x) env = lookupEnv x env
+interp (Var x) env = pure $ lookupEnv x env
 interp (Const n) _ = pure $ Num n
 interp (Add t1 t2) env = do
     n1 <- interp t1 env
     n2 <- interp t2 env
-    add n1 n2
+    pure $ add n1 n2
 interp (Lam x t) env = pure $ Fun (\a => interp t ((x, a) :: env))
 interp (App t1 t2) env = do
     f <- interp t1 env
@@ -146,9 +147,13 @@ Show Value where
     show (Num n) = show n
     show (Fun _) = "<function>"
 
+-- To run our computation, we call run. This produces a computation in some
+-- applicative context m. Using the (Writer (List Value) Value) we set this
+-- context to the Writer monad. Then we run this monad by calling runWriterT
+-- and runIdentity (sadly, there's no runWriter).
 test : Term -> String
 test t =
-    case runIdentity $ runWriterT $ the (Writer (List Value) _) $ run (interp t []) of
+    case runIdentity $ runWriterT $ the (Writer (List Value) Value) $ run (interp t []) of
         (value, log) =>
             "log: " ++ show log ++ "\n" ++
             "result: " ++ show value
@@ -158,7 +163,7 @@ term0 = App (Lam "x" (Add (Var "x") (Var "x")))
             (Add (Const 10) (Const 11))
 
 out_term0 : Term
-out_term0 = Out (Add (Out (Const 42)) (Out (Const 23456789)))
+out_term0 = Out (Add (Out (Const 42)) (Out (Const 54321)))
 
 testTerms : List Term
 testTerms = [term0, out_term0]
@@ -166,5 +171,7 @@ testTerms = [term0, out_term0]
 main : IO ()
 main = do
     for_ testTerms $ \t => do
+        putStrLn $ cast $ replicate 50 '-'
         putStrLn $ "Interpreting " ++ show t
         putStrLn $ test t
+        putStrLn $ cast $ replicate 50 '-'

@@ -19,13 +19,13 @@ data Value = Wrong
 
 type Env = [(Name, Value)]
 
-lookupEnv :: Name -> Env -> Writer [Value] Value
-lookupEnv x [] = pure Wrong
-lookupEnv x ((y, v) : env) = if x == y then pure v else lookupEnv x env
+lookupEnv :: Name -> Env -> Value
+lookupEnv x [] = Wrong
+lookupEnv x ((y, v) : env) = if x == y then v else lookupEnv x env
 
-add :: Value -> Value -> Writer [Value] Value
-add (Num n) (Num m) = pure $ Num (n + m)
-add _ _ = pure Wrong
+add :: Value -> Value -> Value
+add (Num n) (Num m) = Num (n + m)
+add _ _ = Wrong
 
 apply :: Value -> Value -> Writer [Value] Value
 apply (Fun f) x = f x
@@ -33,12 +33,12 @@ apply _ _ = pure Wrong
 
 -- We interpret Out t by appending t to the log.
 interp :: Term -> Env -> Writer [Value] Value
-interp (Var x) env = lookupEnv x env
+interp (Var x) env = pure $ lookupEnv x env
 interp (Const n) _ = pure $ Num n
 interp (Add t1 t2) env = do
     n1 <- interp t1 env
     n2 <- interp t2 env
-    add n1 n2
+    pure $ add n1 n2
 interp (Lam x t) env = pure $ Fun (\a -> interp t ((x, a) : env))
 interp (App t1 t2) env = do
     f <- interp t1 env
@@ -77,7 +77,7 @@ term0 = App (Lam "x" (Add (Var "x") (Var "x")))
 
 -- More test terms.
 out_term0 :: Term
-out_term0 = Out (Add (Out (Const 42)) (Out (Const 23456789)))
+out_term0 = Out (Add (Out (Const 42)) (Out (Const 54321)))
 
 testTerms :: [Term]
 testTerms = [term0, out_term0]
@@ -85,5 +85,7 @@ testTerms = [term0, out_term0]
 main :: IO ()
 main = do
     forM_ testTerms $ \t -> do
+        putStrLn $ replicate 50 '-'
         putStrLn $ "Interpreting " ++ show t
         putStrLn $ test t
+        putStrLn $ replicate 50 '-'
