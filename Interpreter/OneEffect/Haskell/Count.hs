@@ -24,7 +24,7 @@ lookupEnv x ((y, v) : env) = if x == y then v else lookupEnv x env
 
 -- Increase the count by one.
 tick :: State Int ()
-tick = modify (+1)
+tick = state $ \s -> ((), s + 1)
 
 -- The types of add and apply change because we need to maintain the counter.
 add :: Value -> Value -> State Int Value
