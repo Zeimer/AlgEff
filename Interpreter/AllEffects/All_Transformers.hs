@@ -106,9 +106,6 @@ interp (App t1 t2) env = do
     x <- interp t2 env
     apply f x
 interp Count _ = StateT $ \s -> pure (Num s, s)
-    {-do
-    n <- get
-    pure $ Num n-}
 interp Fail _ = lift $ lift $ ListT $ pure []
 interp (Amb t1 t2) env = mplus (interp t1 env) (interp t2 env)
 interp (Out t) env = do
@@ -121,8 +118,8 @@ instance Show Term where
     show (Const n) = show n
     show (Add t1 t2) = show t1 ++ " + (" ++ show t2 ++ ")"
     show (Lam x t) = "λ" ++ x ++ "." ++ show t
-    show (App t1 t2) = "(" ++ show t1 ++ ")" ++ show t2
-    show (Count) = "Count"
+    show (App t1 t2) = "(" ++ show t1 ++ ")(" ++ show t2 ++ ")"
+    show Count = "Count"
     show Fail = "Fail"
     show (Amb t1 t2) = "Amb (" ++ show t1 ++ ") (" ++ show t2 ++ ")"
     show (Out t) = "Out (" ++ show t ++ ")"
@@ -139,7 +136,7 @@ instance Show Value where
 --
 -- Either String [((Value, Int), [Value])]
 --
--- We then do errors handling an map over the list of results to print them all.
+-- We then do error handling and map over the list of results to print them all.
 test :: Term -> String
 test t =
     case runListT $ runWriterT $ runStateT (interp t []) 0 of
@@ -184,7 +181,7 @@ testTerms =
     [term0, count_term0, count_term1, error_term0, failamb_term0, failamb_term1, out_term0, term1]
 
 -- A big weakness of monad transformer stacks is that they are fixed. We have
--- think up front what the ordering of computational effects will be. If we
+-- to think up front what the ordering of computational effects will be. If we
 -- want to change it, we have to refactor our code, which might not be the
 -- easiest thing to do with all those lifts sitting 'round there...
 main :: IO ()

@@ -79,7 +79,7 @@ fun show(t : term) : string
         Const(n) -> show(n)
         Add(t1, t2) -> show(t1) + " + (" + show(t2) + ")"
         Lam(x, t') -> "λ" + x + "." + show(t')
-        App(t1, t2) -> "(" + show(t1) + ")" + show(t2)
+        App(t1, t2) -> "(" + show(t1) + ")(" + show(t2) + ")"
         Out(t') -> "Out(" + show(t') + ")"
     }
 }
@@ -148,7 +148,7 @@ val term0 : term =
         Add(Const(10), Const(11)))
 
 val out_term0 : term =
-    Out(Add(Out(Const(42)), Out(Const(23456789))))
+    Out(Add(Out(Const(42)), Out(Const(54321))))
 
 val testTerms : list<term> =
     [term0, out_term0]

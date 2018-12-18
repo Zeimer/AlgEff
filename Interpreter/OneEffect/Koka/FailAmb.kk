@@ -83,7 +83,7 @@ fun show(t : term) : string
         Const(n) -> show(n)
         Add(t1, t2) -> show(t1) + " + (" + show(t2) + ")"
         Lam(x, t') -> "λ" + x + "." + show(t')
-        App(t1, t2) -> "(" + show(t1) + ")" + show(t2)
+        App(t1, t2) -> "(" + show(t1) + ")(" + show(t2) + ")"
         Fail -> "Fail"
         Amb(t1, t2) -> "Amb (" + show(t1) + ") (" + show(t2) + ")"
     }

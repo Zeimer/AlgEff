@@ -8,11 +8,8 @@ import Control.Monad.Writer
 
 import Control.Monad.Identity
 
-import Control.Monad.Except
-
 type Name = String
 
--- This time we want to have all the effects at once.
 data Term = Var Name
           | Const Int
           | Add Term Term
@@ -167,8 +164,8 @@ instance Show Term where
     show (Const n) = show n
     show (Add t1 t2) = show t1 ++ " + (" ++ show t2 ++ ")"
     show (Lam x t) = "λ" ++ x ++ "." ++ show t
-    show (App t1 t2) = "(" ++ show t1 ++ ")" ++ show t2
-    show (Count) = "Count"
+    show (App t1 t2) = "(" ++ show t1 ++ ")(" ++ show t2 ++ ")"
+    show Count = "Count"
     show Fail = "Fail"
     show (Amb t1 t2) = "Amb (" ++ show t1 ++ ") (" ++ show t2 ++ ")"
     show (Out t) = "Out (" ++ show t ++ ")"
@@ -198,15 +195,14 @@ test t =
                 "log: " ++ log ++ "\n" ++
                 "result: " ++ show val ++ " (in " ++ show state ++ " steps)"
 
--- We can also run our effects in a different order, so that erroneous terms
--- don't get the steps counted when they are interpreted. Doing the same the
--- transformers way would make us copy-paste and hand-adjust the whole file.
-{-test' :: Term -> String
-test' t =
-    case runListT $ runStateT $ runWriterT (interp t []) 0 of
-        Left msg -> msg
-        Right (v, s) -> show v ++ " (in " ++ show s ++ " steps)"
--}
+-- We can also run our effects in a different order, so that, for example,
+-- we cant count how many steps were performed before we encountered an
+-- error. Doing the same the transformers way would make us copy-paste and
+-- hand-adjust the whole file.
+--
+-- EXERCISE: I'm too lazy to do this. Do it yourself.
+--test' :: Term -> String
+--test' t =
 
 term0 :: Term
 term0 = App (Lam "x" (Add (Var "x") (Var "x")))
@@ -249,3 +245,11 @@ main = do
         putStrLn $ "Interpreting " ++ show t
         putStrLn $ test t
         putStrLn $ replicate 50 '-'
+    -- Uncomment this when you have solved the exercise.
+    {-
+    forM_ testTerms $ \t -> do
+        putStrLn $ replicate 50 '-'
+        putStrLn $ "Interpreting " ++ show t
+        putStrLn $ test t
+        putStrLn $ replicate 50 '-'
+    -}

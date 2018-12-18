@@ -61,7 +61,7 @@ Show Term where
     show (Const n) = show n
     show (Add t1 t2) = show t1 ++ " + (" ++ show t2 ++ ")"
     show (Lam x t) = "λ" ++ x ++ "." ++ show t
-    show (App t1 t2) = "(" ++ show t1 ++ ")" ++ show t2
+    show (App t1 t2) = "(" ++ show t1 ++ ")(" ++ show t2 ++ ")"
     show Fail = "Fail"
     show (Amb t1 t2) = "Amb (" ++ show t1 ++ ") (" ++ show t2 ++ ")"
 

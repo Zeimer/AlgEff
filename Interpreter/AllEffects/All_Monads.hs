@@ -1,11 +1,12 @@
 import Control.Monad.State
 import Control.Monad.Writer
 
--- WARNING: this file is utterly broken. If you think that monads are all you
--- need, try to fix it. I assure you that you will fail.
+-- EXERCISE: this file is utterly broken. If you think that monads are all you
+-- need, try fixing it. I assure you that you will fail miserably.
 
 type Name = String
 
+-- This time we want to have all the effects at once.
 data Term = Var Name
           | Const Int
           | Add Term Term
@@ -73,8 +74,8 @@ instance Show Term where
     show (Const n) = show n
     show (Add t1 t2) = show t1 ++ " + (" ++ show t2 ++ ")"
     show (Lam x t) = "λ" ++ x ++ "." ++ show t
-    show (App t1 t2) = "(" ++ show t1 ++ ")" ++ show t2
-    show (Count) = "Count"
+    show (App t1 t2) = "(" ++ show t1 ++ ")(" ++ show t2 ++ ")"
+    show Count = "Count"
     show Fail = "Fail"
     show (Amb t1 t2) = "Amb (" ++ show t1 ++ ") (" ++ show t2 ++ ")"
     show (Out t) = "Out (" ++ show t ++ ")"

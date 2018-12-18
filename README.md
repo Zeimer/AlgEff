@@ -18,3 +18,4 @@ This repo contains slides and code from my seminar talk. For the best experience
 * Figure out how to run the all-effect interpreter in Idris. Finish writing comments.
 * Figure out how to get final state in Count.idr
 * Rewrite the simple interpreters not the use class operations like get, put, tell etc.
+* Figure out how to run effects in different order in All_Classes.hs
