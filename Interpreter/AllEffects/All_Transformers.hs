@@ -79,12 +79,18 @@ apply :: Value -> Value -> Computation Value
 apply (Fun f) x = tick >> f x
 apply f _ = lift $ lift $ lift $ Left $ show f ++ " should be a function!"
 
+-- Previously we used operations like get and tell to handle state and logging.
+-- This was very comfortable. Thus, to feel how bad transformers really are,
+-- let's handle our effects without using such operations.
+--
 -- To interpret Fail, we have to create an empty ListT, which we can do with
 -- ListT $ pure []. Then we have to lift it twice so it can be used as a
 -- value of type Computation Value.
+--
 -- To interpret Amb, we shamelessly use the mplus function, which comes from
 -- the class MonadPlus. If you think monad transformers are easy to use, try
 -- interpreting Amb without using mplus.
+--
 -- Finally for logging we use
 --
 -- lift $ WriterT $ pure ((), [v])

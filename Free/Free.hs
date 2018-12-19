@@ -83,6 +83,7 @@ run (Free (GetLine f)) = getLine >>= run . f
 -- To actually run a program which uses the Console effect, we have to somehow
 -- interpret it. The easiest way of doing this is to transform a computation of
 -- type Console a into a computation of type IO a, which can then be executed.
+-- Fun fact: run is a monad morphism.
 
 main :: IO ()
 main = run echo >> return ()
